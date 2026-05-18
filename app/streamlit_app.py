@@ -15,8 +15,11 @@ from src.tournament_predictor import compare_title_contenders
 st.set_page_config(
     page_title="Brazil World Cup Data Lab",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
+
+MIN_MINUTES = 300
+SIMULATIONS = 10000
 
 ROLE_LABELS = {
     "GK": "Goleiro",
@@ -86,12 +89,7 @@ st.markdown(
     }
 
     [data-testid="stSidebar"]{
-        background:#070707;
-        border-right:1px solid var(--line);
-    }
-
-    [data-testid="stSidebar"] *{
-        color:var(--ink)!important;
+        display:none;
     }
 
     .hero,.case-hero{
@@ -285,6 +283,12 @@ st.markdown(
         display:block;
     }
 
+    .report-block{
+        border-top:1px solid var(--line);
+        padding-top:22px;
+        margin-top:22px;
+    }
+
     div[data-testid="stDataFrame"]{
         border:1px solid var(--line);
         border-radius:18px;
@@ -320,9 +324,8 @@ st.markdown(
 )
 
 
-def load_data(uploaded_file):
-    sample_path = ROOT / "data" / "processed" / "sample_brazil_players.csv"
-    return pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv(sample_path)
+def load_data():
+    return pd.read_csv(ROOT / "data" / "processed" / "sample_brazil_players.csv")
 
 
 def load_team_strength():
@@ -418,41 +421,37 @@ def role_ranking(df):
     return pd.DataFrame(rows)
 
 
+raw_df = load_data()
+raw_df = raw_df[raw_df["minutes"] >= MIN_MINUTES].copy()
+df = assign_squad_role(calculate_scores(add_features(raw_df)))
+xi = select_best_xi(df)
+reserves = select_reserves(df, xi)
+team_strength = load_team_strength()
+brazil_strength = float(team_strength.loc[team_strength["team"] == "Brazil", "strength_index"].iloc[0])
+contenders = compare_title_contenders(team_strength, simulations=SIMULATIONS, top_n=10)
+
+avg_score = round(xi["score_final"].mean(), 1)
+total_minutes = int(xi["minutes"].sum())
+total_goals = int(xi["goals"].sum())
+total_assists = int(xi["assists"].sum())
+
 st.markdown(
     """
     <div class='hero'>
       <div class='eyebrow'>Football analytics / Decision intelligence / World Cup 2026</div>
       <h1 class='hero-title'>Brazil squad logic, <em>made readable.</em></h1>
       <div class='hero-text'>
-        Um laboratório de dados para explicar o XI estatístico do Brasil, documentar a arquitetura da base
-        e comparar a Seleção com as 10 candidatas mais prováveis ao título.
+        A portfolio case that explains Brazil's statistical XI, documents the data model and compares the Seleção
+        with the leading World Cup title contenders. The interface is fixed as a published report: no manual strength tuning,
+        no exploratory controls, only the model output and its assumptions.
       </div>
       <div style='margin-top:18px'>
-        <span class='chip'>Python</span><span class='chip'>Streamlit</span><span class='chip'>PostgreSQL-ready</span><span class='chip'>Monte Carlo</span><span class='chip'>Squad scoring</span>
+        <span class='chip'>Python</span><span class='chip'>Streamlit</span><span class='chip'>PostgreSQL-ready</span><span class='chip'>Monte Carlo</span><span class='chip'>SportsDataverse candidate</span><span class='chip'>Squad scoring</span>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-uploaded = st.sidebar.file_uploader("Carregar CSV de jogadores", type=["csv"])
-min_minutes = st.sidebar.slider("Minutagem mínima", min_value=0, max_value=3000, value=300, step=100)
-brazil_strength = st.sidebar.slider("Índice de força do Brasil", min_value=70, max_value=100, value=92, step=1)
-simulations = st.sidebar.select_slider("Simulações Monte Carlo", options=[1000, 5000, 10000, 25000], value=10000)
-
-raw_df = load_data(uploaded)
-raw_df = raw_df[raw_df["minutes"] >= min_minutes].copy()
-df = assign_squad_role(calculate_scores(add_features(raw_df)))
-xi = select_best_xi(df)
-reserves = select_reserves(df, xi)
-team_strength = load_team_strength()
-team_strength.loc[team_strength["team"] == "Brazil", "strength_index"] = brazil_strength
-contenders = compare_title_contenders(team_strength, simulations=simulations, top_n=10)
-
-avg_score = round(xi["score_final"].mean(), 1)
-total_minutes = int(xi["minutes"].sum())
-total_goals = int(xi["goals"].sum())
-total_assists = int(xi["assists"].sum())
 
 m1, m2, m3, m4 = st.columns(4)
 with m1:
@@ -462,16 +461,126 @@ with m2:
 with m3:
     metric_card("Gols do XI", total_goals, "Produção recente da base")
 with m4:
-    metric_card("Assistências", total_assists, "Criação direta de gols")
+    metric_card("Força Brasil", f"{brazil_strength:.0f}", "Valor fixo no dataset do modelo")
 
-xi_tab, contenders_tab, method_tab, about_tab, api_tab, tables_tab = st.tabs([
+report_tab, xi_tab, contenders_tab, method_tab, api_tab, tables_tab = st.tabs([
+    "Full report",
     "XI + Raciocínio",
     "Top 10 favoritas",
     "Método estatístico",
-    "About this model",
     "Database/API",
     "Tabelas",
 ])
+
+with report_tab:
+    st.markdown(
+        """
+        <div class='case-hero'>
+          <div class='eyebrow'>Full model report / Portfolio case</div>
+          <div class='case-title'>A transparent decision model for Brazil's squad and World Cup outlook.</div>
+          <div class='case-lead'>
+            This report documents the logic behind the dashboard: why the data was selected, how each decision is processed,
+            how the model chooses players, how Brazil is compared with other title contenders and where the project should evolve.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div class='case-kpis'>
+          <div class='case-kpi'><span>Decision</span><strong>Best XI</strong></div>
+          <div class='case-kpi'><span>Method</span><strong>Role scoring</strong></div>
+          <div class='case-kpi'><span>Forecast</span><strong>Top 10 title race</strong></div>
+          <div class='case-kpi'><span>Database</span><strong>PostgreSQL-ready</strong></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 1. Problem framing")
+    st.markdown(
+        """
+        The project treats national-team selection as a decision-intelligence problem. The question is not simply **who has the biggest reputation** or **who scored the most goals**. The question is: **which player provides the strongest statistical evidence for a specific tactical role, under a transparent set of assumptions?**
+
+        This framing is important because a football team is constrained by structure. A forward, a fullback and a defensive midfielder do not create value in the same way. The model therefore avoids a single flat ranking and instead selects players by tactical function.
+        """
+    )
+
+    st.markdown("### 2. Why these data fields are used")
+    st.markdown(
+        """
+        The current MVP uses fields that are broadly available across football APIs and public datasets: minutes, appearances, goals, assists, rating, league, club, passes, duels, tackles, interceptions and cards. These variables were chosen because they support three analytical needs:
+
+        **Availability:** they are easier to collect consistently across leagues and sources than advanced event metrics.
+
+        **Comparability:** they allow normalization by 90 minutes, so players with different playing time can be compared more fairly.
+
+        **Decision relevance:** they connect directly to tactical roles. Attackers need offensive production, midfielders need mixed contribution, defenders need defensive reliability, and goalkeepers need rhythm and rating until richer keeper metrics are available.
+        """
+    )
+
+    st.markdown("### 3. How each decision is processed")
+    decision_table = pd.DataFrame(
+        [
+            ["Minutagem", "Filters out very low-sample players", "Players below 300 minutes are excluded from the published report."],
+            ["League weight", "Controls for competitive environment", "Production in stronger leagues receives more model confidence."],
+            ["Per-90 metrics", "Makes output comparable", "Goals, assists, tackles and key actions are scaled to 90 minutes."],
+            ["Role mapping", "Prevents unfair comparisons", "Players compete inside GK, RB, CB, LB, DM/CM, RW, AM/SS, LW or ST."],
+            ["Score final", "Creates one decision index", "Normalized features are combined into a 0-100 score."],
+            ["Direct competitor", "Explains the selection", "Each starter is compared against the next-best player in the same function."],
+            ["Team strength", "Feeds title forecast", "Brazil's strength index is fixed in the dataset, not manually adjusted by the viewer."],
+        ],
+        columns=["Decision layer", "Purpose", "How it is applied"],
+    )
+    st.dataframe(decision_table, use_container_width=True, hide_index=True)
+
+    st.markdown("### 4. Data-source strategy")
+    st.markdown(
+        """
+        The MVP currently ships with a sample CSV to make the portfolio app reproducible. The production version should move to a data-ingestion layer with three levels:
+
+        **Primary layer:** API-Football or another broad football API for player-season statistics, clubs, competitions and appearances.
+
+        **Complementary open-source layer:** SportsDataverse, especially football-related packages such as `worldfootballR`, which can collect player, team and match data from sources such as FBref, Transfermarkt, Understat and FotMob.
+
+        **Manual audit layer:** national-team tests, tactical role used by the coach, injury status, suspension status and final tournament roster decisions.
+        """
+    )
+
+    st.markdown("### 5. Forecast design")
+    st.markdown(
+        """
+        The World Cup prediction layer is not presented as a betting model. It is a comparative scenario model. Each national team receives a strength index, then a Monte Carlo simulation estimates title, final and semifinal probabilities among the ten strongest teams in the dataset.
+
+        The most important design choice is that Brazil's strength is no longer user-adjustable. It is treated as model data, stored in `team_strength_index.csv`. This makes the dashboard behave like a published analytical report instead of a playground.
+        """
+    )
+
+    st.markdown("### 6. Current limitations")
+    st.markdown(
+        """
+        - The player dataset is still a sample dataset, not a live API extract.
+        - League weights are manually defined and should later be derived from Elo, UEFA coefficients, market values or historical inter-league strength.
+        - The model does not yet include injuries, fatigue, squad chemistry, tactical complementarity or official World Cup bracket paths.
+        - Advanced metrics such as xG, xA, progressive carries, pressures, shot-creating actions and keeper post-shot metrics are not yet included.
+        - National-team tests are not automatically ingested yet.
+        """
+    )
+
+    st.markdown("### 7. Roadmap")
+    roadmap = pd.DataFrame(
+        [
+            ["v1", "Current portfolio MVP", "CSV sample, role score, XI explanation, top-10 contender comparison."],
+            ["v2", "Database version", "PostgreSQL schema, ingestion scripts, raw/processed tables and reproducible ETL."],
+            ["v3", "Better football data", "Integrate API-Football and evaluate SportsDataverse/worldfootballR as complementary source."],
+            ["v4", "Advanced metrics", "Add xG, xA, progressive actions, pressure, shot quality and goalkeeper metrics."],
+            ["v5", "Tournament simulator", "Use official groups, bracket path, Elo/FIFA ranking, injuries and squad availability."],
+        ],
+        columns=["Version", "Focus", "What changes"],
+    )
+    st.dataframe(roadmap, use_container_width=True, hide_index=True)
 
 with xi_tab:
     st.markdown("### XI estatístico — nomes, função e justificativa")
@@ -547,88 +656,6 @@ with method_tab:
     st.markdown("#### Ranking por função")
     rr = role_ranking(df)
     st.dataframe(rr, use_container_width=True, hide_index=True)
-
-with about_tab:
-    st.markdown(
-        """
-        <div class='case-hero'>
-          <div class='eyebrow'>About this model / Portfolio case</div>
-          <div class='case-title'>A decision model for Brazil's World Cup squad and title outlook.</div>
-          <div class='case-lead'>
-            This project turns football squad selection into a transparent data product. It combines player-season statistics,
-            tactical role mapping, league-strength adjustments and a Monte Carlo layer to explain both who should start for Brazil
-            and how the team compares with other title contenders.
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div class='case-kpis'>
-          <div class='case-kpi'><span>Use case</span><strong>Squad intelligence</strong></div>
-          <div class='case-kpi'><span>Core stack</span><strong>Python + Streamlit</strong></div>
-          <div class='case-kpi'><span>Data model</span><strong>PostgreSQL-ready</strong></div>
-          <div class='case-kpi'><span>Prediction layer</span><strong>Monte Carlo</strong></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div class='case-grid'>
-          <div class='case-card'>
-            <div class='eyebrow'>01 / Context</div>
-            <h3>Football selection is a decision problem.</h3>
-            <p>National-team selection is often discussed through reputation, club popularity and recent highlights. This model reframes the debate as a structured analytical question: which players provide the strongest evidence for each tactical role?</p>
-          </div>
-          <div class='case-card'>
-            <div class='eyebrow'>02 / Product question</div>
-            <h3>Who should start, and how competitive is Brazil?</h3>
-            <p>The dashboard answers two linked questions: the best XI by role inside a 4-2-3-1 structure, and Brazil's relative title outlook compared with other elite international teams.</p>
-          </div>
-          <div class='case-card'>
-            <div class='eyebrow'>03 / Data architecture</div>
-            <h3>Designed as a data product.</h3>
-            <p>The MVP reads CSV files, but the schema is structured for a relational database with players, teams, leagues, player-season stats, national-team tests, player scores and national-team strength indexes.</p>
-          </div>
-          <div class='case-card'>
-            <div class='eyebrow'>04 / Method</div>
-            <h3>Players compete inside their actual role.</h3>
-            <p>The model normalizes statistics, adjusts for league strength, maps players to tactical functions and ranks them within position. A striker is not compared directly with a fullback; each role has its own decision context.</p>
-          </div>
-          <div class='case-card'>
-            <div class='eyebrow'>05 / Prediction layer</div>
-            <h3>Title outlook as a comparative signal.</h3>
-            <p>The contender view uses a simplified Monte Carlo simulation based on a national-team strength index. It is not a betting model. It is a transparent scenario layer for comparing Brazil with other title candidates.</p>
-          </div>
-          <div class='case-card'>
-            <div class='eyebrow'>06 / Explainability</div>
-            <h3>Every selection has a visible rationale.</h3>
-            <p>Each starter includes a written explanation showing score, minutes, league weight, key metric and direct competitor. The dashboard is built to make the reasoning inspectable rather than hidden inside a black box.</p>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("### Project scope")
-    st.markdown(
-        """
-        The model is built as an analytical prototype for portfolio demonstration. It shows how a sports analytics problem can be handled with the same structure used in business intelligence and decision-support products: define the question, model the data, design a scoring method, expose the assumptions and communicate the output clearly.
-        """
-    )
-
-    st.markdown("### Limitations and roadmap")
-    st.markdown(
-        """
-        **Current limitations:** sample data, manual league weights, simplified strength index, no live injury feed, no official World Cup draw simulation and no advanced event data such as xG, xA, progressive carries or pressing.
-
-        **Next iterations:** connect API-Football, store raw and processed data in PostgreSQL, add official FIFA/Elo rankings, ingest national-team lineups, include injuries and minutes trend, and replace the simplified title comparison with full tournament bracket simulation once groups and paths are defined.
-        """
-    )
 
 with api_tab:
     st.markdown("### Database/API documentation")
