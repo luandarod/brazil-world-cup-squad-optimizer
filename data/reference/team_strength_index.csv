@@ -1,0 +1,17 @@
+team,strength_index,confederation,notes
+Brazil,92,CONMEBOL,Target team based on squad score and historical strength
+Argentina,93,CONMEBOL,Elite contender benchmark
+France,94,UEFA,Elite contender benchmark
+England,91,UEFA,Elite contender benchmark
+Spain,90,UEFA,Elite contender benchmark
+Germany,88,UEFA,Strong contender benchmark
+Portugal,89,UEFA,Strong contender benchmark
+Netherlands,87,UEFA,Strong contender benchmark
+Uruguay,85,CONMEBOL,Strong South American opponent
+Colombia,83,CONMEBOL,Competitive South American opponent
+Mexico,78,CONCACAF,Host region competitive opponent
+United States,77,CONCACAF,Host region competitive opponent
+Japan,80,AFC,Strong Asian opponent
+Morocco,82,CAF,Strong African opponent
+Senegal,79,CAF,Strong African opponent
+Croatia,84,UEFA,Experienced tournament opponent
