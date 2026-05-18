@@ -10,10 +10,14 @@ sys.path.append(str(ROOT))
 from src.feature_engineering import add_features
 from src.scoring_model import calculate_scores
 from src.squad_optimizer import select_best_xi, select_reserves
+from src.tournament_predictor import simulate_brazil_campaign, simulate_group_stage, match_probabilities
 
-st.set_page_config(page_title="Brazil World Cup Squad Optimizer", layout="wide")
+st.set_page_config(
+    page_title="Brazil World Cup Data Lab",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-ROLE_ORDER = ["GK", "LB", "CB", "RB", "DM_CM", "LW", "AM_SS", "RW", "ST"]
 ROLE_LABELS = {
     "GK": "Goleiro",
     "RB": "Lateral direito",
@@ -26,6 +30,51 @@ ROLE_LABELS = {
     "ST": "Centroavante",
 }
 
+st.markdown(
+    """
+    <style>
+    .main {background-color: #F7F8FA;}
+    .block-container {padding-top: 2rem; padding-bottom: 3rem;}
+    .hero-card {
+        background: linear-gradient(135deg, #0B1F3A 0%, #123B63 45%, #0E7C66 100%);
+        padding: 30px;
+        border-radius: 26px;
+        color: white;
+        box-shadow: 0 18px 42px rgba(11, 31, 58, 0.28);
+        margin-bottom: 22px;
+    }
+    .hero-title {font-size: 36px; font-weight: 800; margin-bottom: 6px;}
+    .hero-subtitle {font-size: 16px; opacity: 0.88; max-width: 920px;}
+    .section-card {
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+        margin-bottom: 18px;
+    }
+    .small-label {font-size: 12px; color: #6B7280; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;}
+    .big-number {font-size: 34px; font-weight: 800; color: #111827; margin-top: 2px;}
+    .muted {font-size: 13px; color: #6B7280;}
+    .pipeline-step {
+        background: #F9FAFB;
+        border: 1px solid #E5E7EB;
+        border-radius: 16px;
+        padding: 14px;
+        height: 116px;
+    }
+    .player-pill {
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 14px;
+        padding: 10px 12px;
+        margin: 4px 0;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 def load_data(uploaded_file):
     sample_path = ROOT / "data" / "processed" / "sample_brazil_players.csv"
@@ -34,147 +83,137 @@ def load_data(uploaded_file):
     return pd.read_csv(sample_path)
 
 
-def player_card(row):
-    return f"""
-    <div style="
-        border:1px solid #E5E7EB;
-        border-radius:16px;
-        padding:14px;
-        margin:6px;
-        background:#FFFFFF;
-        box-shadow:0 1px 4px rgba(0,0,0,0.06);
-        text-align:center;
-        min-height:112px;">
-        <div style="font-size:12px;color:#6B7280;font-weight:600;">{ROLE_LABELS.get(row['squad_position'], row['squad_position'])}</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">{row['player_name']}</div>
-        <div style="font-size:12px;color:#4B5563;">{row['team']} · {row['league']}</div>
-        <div style="font-size:13px;margin-top:6px;">
-            <b>Score:</b> {row['score_final']} · <b>Min:</b> {int(row['minutes'])}
+def load_team_strength():
+    path = ROOT / "data" / "reference" / "team_strength_index.csv"
+    return pd.read_csv(path)
+
+
+def render_card(label, value, note=""):
+    st.markdown(
+        f"""
+        <div class="section-card">
+            <div class="small-label">{label}</div>
+            <div class="big-number">{value}</div>
+            <div class="muted">{note}</div>
         </div>
-        <div style="font-size:12px;color:#374151;">
-            {int(row['goals'])} gols · {int(row['assists'])} assist.
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def compact_xi(xi):
+    xi = xi.copy()
+    xi["função"] = xi["squad_position"].map(ROLE_LABELS)
+    return xi[["função", "player_name", "team", "league", "score_final", "minutes", "goals", "assists"]]
+
+
+st.markdown(
+    """
+    <div class="hero-card">
+        <div class="hero-title">Brazil World Cup Data Lab</div>
+        <div class="hero-subtitle">
+            Dashboard para visualizar a base de jogadores brasileiros, entender o processamento dos dados
+            e simular até onde o Brasil pode chegar na Copa de 2026 com base em força estatística do elenco.
         </div>
     </div>
-    """
+    """,
+    unsafe_allow_html=True,
+)
 
-
-def render_pitch(xi):
-    xi = xi.copy()
-    by_role = {role: xi[xi["squad_position"] == role].to_dict("records") for role in xi["squad_position"].unique()}
-
-    st.markdown("### Escalação visual — 4-2-3-1")
-    st.caption("A formação é montada escolhendo o maior score dentro de cada função. O banco usa os melhores jogadores restantes.")
-
-    pitch_style = """
-    <div style="
-        background:linear-gradient(180deg,#0B6B3A,#0A5C34);
-        border-radius:24px;
-        padding:22px;
-        border:2px solid rgba(255,255,255,0.35);
-        box-shadow:0 8px 26px rgba(0,0,0,0.18);
-        margin-bottom:20px;">
-    """
-    st.markdown(pitch_style, unsafe_allow_html=True)
-
-    lines = [
-        ["ST"],
-        ["LW", "AM_SS", "RW"],
-        ["DM_CM", "DM_CM"],
-        ["LB", "CB", "CB", "RB"],
-        ["GK"],
-    ]
-
-    used_index = {role: 0 for role in by_role}
-    for line in lines:
-        cols = st.columns(len(line))
-        for i, role in enumerate(line):
-            candidates = by_role.get(role, [])
-            idx = used_index.get(role, 0)
-            with cols[i]:
-                if idx < len(candidates):
-                    st.markdown(player_card(candidates[idx]), unsafe_allow_html=True)
-                    used_index[role] = idx + 1
-                else:
-                    st.markdown(
-                        f"<div style='border:1px dashed #D1D5DB;border-radius:16px;padding:16px;text-align:center;background:#F9FAFB;'>Sem jogador para {role}</div>",
-                        unsafe_allow_html=True,
-                    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-st.title("Brazil World Cup Squad Optimizer")
-st.caption("Modelo de apoio para escolha de elenco e time titular com base em dados, função tática e nível competitivo.")
-
-uploaded = st.sidebar.file_uploader("Base CSV de jogadores", type=["csv"])
-formation = st.sidebar.selectbox("Formação", ["4-2-3-1"], index=0)
-min_minutes = st.sidebar.slider("Minutagem mínima para análise", min_value=0, max_value=3000, value=300, step=100)
+uploaded = st.sidebar.file_uploader("Carregar CSV de jogadores", type=["csv"])
+min_minutes = st.sidebar.slider("Minutagem mínima", min_value=0, max_value=3000, value=300, step=100)
+brazil_strength = st.sidebar.slider("Índice de força do Brasil", min_value=70, max_value=100, value=92, step=1)
+simulations = st.sidebar.select_slider("Simulações Monte Carlo", options=[1000, 5000, 10000, 25000], value=10000)
 
 raw_df = load_data(uploaded)
 raw_df = raw_df[raw_df["minutes"] >= min_minutes].copy()
-
-df = add_features(raw_df)
-df = calculate_scores(df)
+df = calculate_scores(add_features(raw_df))
 xi = select_best_xi(df)
 reserves = select_reserves(df, xi)
+team_strength = load_team_strength()
 
 avg_score = round(xi["score_final"].mean(), 1)
 total_minutes = int(xi["minutes"].sum())
 total_goals = int(xi["goals"].sum())
 total_assists = int(xi["assists"].sum())
 
-st.markdown("---")
-metric_cols = st.columns(4)
-metric_cols[0].metric("Score médio do XI", avg_score)
-metric_cols[1].metric("Minutos somados", f"{total_minutes:,}".replace(",", "."))
-metric_cols[2].metric("Gols do XI", total_goals)
-metric_cols[3].metric("Assistências do XI", total_assists)
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    render_card("Score médio do XI", avg_score, "Média dos titulares sugeridos")
+with col2:
+    render_card("Minutos do XI", f"{total_minutes:,}".replace(",", "."), "Ritmo competitivo agregado")
+with col3:
+    render_card("Gols do XI", total_goals, "Produção recente da base")
+with col4:
+    render_card("Assistências do XI", total_assists, "Criação direta de gols")
 
-main_tab, method_tab, ranking_tab, data_tab = st.tabs([
-    "Visão executiva",
-    "Método de escolha",
-    "Ranking e comparação",
-    "Database e processamento",
+api_tab, model_tab, prediction_tab, squad_tab = st.tabs([
+    "Database/API",
+    "Processamento",
+    "Previsão Copa 2026",
+    "Elenco sugerido",
 ])
 
-with main_tab:
-    render_pitch(xi)
-
-    st.subheader("Titulares escolhidos")
-    display_xi = xi[["squad_position", "player_name", "team", "league", "score_final", "minutes", "goals", "assists", "rating"]].copy()
-    display_xi["função"] = display_xi["squad_position"].map(ROLE_LABELS)
-    st.dataframe(
-        display_xi[["função", "player_name", "team", "league", "score_final", "minutes", "goals", "assists", "rating"]],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    st.subheader("Banco sugerido")
-    st.dataframe(
-        reserves[["player_name", "team", "league", "position", "score_final", "minutes", "goals", "assists", "rating"]],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-with method_tab:
-    st.subheader("Como o modelo escolhe o time")
+with api_tab:
+    st.markdown("### Database/API view")
     st.markdown(
-        """
-        O modelo não escolhe simplesmente os maiores nomes. Ele seleciona jogadores por função dentro da formação.
-
-        A lógica atual é:
-
-        1. carregar a base de jogadores;
-        2. criar métricas comparáveis, como gols por 90, assistências por 90, passes-chave por 90 e duelos vencidos;
-        3. aplicar peso pelo nível da liga;
-        4. normalizar as métricas para uma escala comum;
-        5. penalizar baixa minutagem e excesso de cartões;
-        6. mapear cada jogador para uma função tática;
-        7. escolher o maior score dentro de cada função do 4-2-3-1.
-        """
+        "Esta aba mostra como o projeto deve ser lido como produto de dados: quais tabelas entram, o que cada uma armazena e como isso vira uma base analítica para previsão e escolha de elenco."
     )
 
-    st.markdown("#### Fórmula simplificada")
+    c1, c2 = st.columns([1.1, 1])
+    with c1:
+        st.markdown("#### Modelo de dados recomendado")
+        schema = pd.DataFrame([
+            ["players", "Dimensão", "Cadastro dos jogadores brasileiros elegíveis"],
+            ["teams", "Dimensão", "Clubes, país e liga principal"],
+            ["leagues", "Dimensão", "Peso competitivo de cada liga"],
+            ["player_season_stats", "Fato", "Minutos, gols, assists, passes, duelos, cartões e rating"],
+            ["national_team_tests", "Fato", "Jogos/testes da Seleção, formação e função usada"],
+            ["player_scores", "Modelo", "Scores calculados por função e temporada"],
+            ["team_strength_index", "Modelo", "Força estimada das seleções para simulação da Copa"],
+        ], columns=["Tabela", "Tipo", "Descrição"])
+        st.dataframe(schema, use_container_width=True, hide_index=True)
+
+    with c2:
+        st.markdown("#### Stack sugerida")
+        st.markdown(
+            """
+            <div class="section-card">
+                <b>MVP</b><br>CSV + pandas + Streamlit<br><br>
+                <b>Portfólio técnico</b><br>PostgreSQL + SQL + pandas<br><br>
+                <b>Versão cloud</b><br>BigQuery + dbt + Looker/Power BI
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("#### Base carregada no app")
+    st.dataframe(raw_df, use_container_width=True, hide_index=True)
+
+with model_tab:
+    st.markdown("### Pipeline de processamento")
+    steps = [
+        ("1. Ingestão", "API-Football ou CSV manual com jogadores brasileiros."),
+        ("2. Limpeza", "Padroniza nomes, converte numéricos e remove registros sem minutos."),
+        ("3. Features", "Cria métricas por 90 minutos e peso de liga."),
+        ("4. Score", "Normaliza métricas e calcula score final de 0 a 100."),
+        ("5. Seleção", "Escolhe titulares por função no 4-2-3-1."),
+        ("6. Previsão", "Usa strength index e Monte Carlo para campanha na Copa."),
+    ]
+    cols = st.columns(3)
+    for i, (title, desc) in enumerate(steps):
+        with cols[i % 3]:
+            st.markdown(
+                f"""
+                <div class="pipeline-step">
+                    <b>{title}</b><br>
+                    <span class="muted">{desc}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("#### Fórmula do score")
     st.code(
         """Score Final =
 0.30 * performance por posição
@@ -186,109 +225,105 @@ with method_tab:
         language="text",
     )
 
-    st.markdown("#### Por que separar por função?")
+    st.markdown("#### Ranking geral")
+    fig = px.bar(
+        df.sort_values("score_final", ascending=False).head(15),
+        x="score_final",
+        y="player_name",
+        orientation="h",
+        hover_data=["team", "league", "minutes", "goals", "assists"],
+        labels={"score_final": "Score", "player_name": "Jogador"},
+    )
+    fig.update_layout(yaxis={"categoryorder": "total ascending"}, height=520, margin=dict(l=10, r=10, t=20, b=10))
+    st.plotly_chart(fig, use_container_width=True)
+
+with prediction_tab:
+    st.markdown("### Previsão estatística da campanha do Brasil")
     st.markdown(
-        "Um atacante pode ter score maior que um lateral, mas isso não significa que ele deve ocupar uma vaga defensiva. Por isso, o modelo primeiro classifica jogadores por papel tático e depois escolhe os melhores dentro de cada papel."
+        "A simulação usa um índice de força para o Brasil e adversários médios por fase. É uma primeira camada explicável, não uma previsão definitiva. Quando os grupos e chave oficial estiverem definidos, o modelo pode ser substituído por simulação completa jogo a jogo."
     )
 
-    st.markdown("#### Limitações atuais")
-    st.markdown(
-        """
-        - A base de exemplo ainda não tem xG, xA, pressão, conduções progressivas ou lesões.
-        - A camada de Seleção ainda é manual.
-        - O peso das ligas é definido por regra de negócio e pode ser refinado com rankings Elo ou UEFA.
-        - O modelo não mede química entre jogadores.
-        """
+    campaign = simulate_brazil_campaign(brazil_strength=brazil_strength, simulations=simulations)
+    campaign["probability_pct"] = (campaign["probability"] * 100).round(1)
+
+    c1, c2 = st.columns([1.2, 1])
+    with c1:
+        fig_campaign = px.bar(
+            campaign,
+            x="stage",
+            y="probability_pct",
+            text="probability_pct",
+            labels={"stage": "Fase", "probability_pct": "Probabilidade (%)"},
+        )
+        fig_campaign.update_traces(texttemplate="%{text}%", textposition="outside")
+        fig_campaign.update_layout(height=470, margin=dict(l=10, r=10, t=20, b=10), yaxis_range=[0, 105])
+        st.plotly_chart(fig_campaign, use_container_width=True)
+
+    with c2:
+        champion_prob = campaign.loc[campaign["stage"] == "Champion", "probability_pct"].iloc[0]
+        final_prob = campaign.loc[campaign["stage"] == "Final", "probability_pct"].iloc[0]
+        semifinal_prob = campaign.loc[campaign["stage"] == "Semifinal", "probability_pct"].iloc[0]
+        render_card("Chance de título", f"{champion_prob}%", "Simulação Monte Carlo simplificada")
+        render_card("Chance de final", f"{final_prob}%", "Probabilidade de alcançar a decisão")
+        render_card("Chance de semifinal", f"{semifinal_prob}%", "Probabilidade de chegar entre os quatro")
+
+    st.markdown("#### Simular grupo hipotético")
+    selected_opponents = st.multiselect(
+        "Escolha 3 adversários para um grupo hipotético",
+        options=[t for t in team_strength["team"].tolist() if t != "Brazil"],
+        default=["Mexico", "Japan", "Morocco"],
+        max_selections=3,
     )
+    if len(selected_opponents) == 3:
+        group_df = team_strength[team_strength["team"].isin(["Brazil"] + selected_opponents)].copy()
+        group_df.loc[group_df["team"] == "Brazil", "strength_index"] = brazil_strength
+        group_result = simulate_group_stage(group_df, target_team="Brazil", simulations=simulations)
+        group_result["probability_pct"] = (group_result["probability"] * 100).round(1)
 
-with ranking_tab:
-    col1, col2 = st.columns(2)
+        gc1, gc2 = st.columns([1, 1])
+        with gc1:
+            st.dataframe(group_df, use_container_width=True, hide_index=True)
+        with gc2:
+            fig_group = px.bar(
+                group_result,
+                x="position",
+                y="probability_pct",
+                text="probability_pct",
+                labels={"position": "Posição no grupo", "probability_pct": "Probabilidade (%)"},
+            )
+            fig_group.update_traces(texttemplate="%{text}%", textposition="outside")
+            fig_group.update_layout(height=330, yaxis_range=[0, 105])
+            st.plotly_chart(fig_group, use_container_width=True)
+    else:
+        st.info("Escolha exatamente 3 adversários para simular um grupo.")
 
-    with col1:
-        st.subheader("Top 15 por score")
-        fig = px.bar(
-            df.sort_values("score_final", ascending=False).head(15),
-            x="score_final",
-            y="player_name",
-            orientation="h",
-            hover_data=["team", "league", "minutes", "goals", "assists"],
-            labels={"score_final": "Score", "player_name": "Jogador"},
-        )
-        fig.update_layout(yaxis={"categoryorder": "total ascending"}, height=520)
-        st.plotly_chart(fig, use_container_width=True)
+with squad_tab:
+    st.markdown("### Elenco sugerido pelo modelo")
+    st.markdown("A escalação deixa de ser o foco visual principal, mas continua disponível como saída do modelo.")
 
-    with col2:
-        st.subheader("Produção ofensiva x minutagem")
-        fig2 = px.scatter(
-            df,
-            x="minutes",
-            y="goal_contributions_p90",
-            size="score_final",
-            hover_name="player_name",
-            color="league_weight",
-            labels={
-                "minutes": "Minutos",
-                "goal_contributions_p90": "Gols + assistências por 90",
-                "league_weight": "Peso da liga",
-            },
-        )
-        fig2.update_layout(height=520)
-        st.plotly_chart(fig2, use_container_width=True)
+    st.markdown("#### Titulares")
+    st.dataframe(compact_xi(xi), use_container_width=True, hide_index=True)
 
-    st.subheader("Base ranqueada")
+    st.markdown("#### Reservas")
     st.dataframe(
-        df[["player_name", "team", "league", "position", "minutes", "goals", "assists", "rating", "league_weight", "score_final"]]
-        .sort_values("score_final", ascending=False),
+        reserves[["player_name", "team", "league", "position", "score_final", "minutes", "goals", "assists", "rating"]],
         use_container_width=True,
         hide_index=True,
     )
 
-with data_tab:
-    st.subheader("Qual database usar")
-    st.markdown(
-        """
-        Para o MVP, CSV é suficiente. Para portfólio técnico, a melhor escolha é PostgreSQL. Para uma versão cloud, BigQuery.
-
-        **Recomendação de evolução:**
-
-        ```text
-        MVP: CSV + pandas + Streamlit
-        Portfólio técnico: PostgreSQL + pandas/SQL + Streamlit
-        Cloud analytics: BigQuery + dbt/SQL + Looker/Power BI
-        ```
-        """
+    st.markdown("#### Produção ofensiva x minutagem")
+    fig_scatter = px.scatter(
+        df,
+        x="minutes",
+        y="goal_contributions_p90",
+        size="score_final",
+        hover_name="player_name",
+        color="league_weight",
+        labels={
+            "minutes": "Minutos",
+            "goal_contributions_p90": "Gols + assistências por 90",
+            "league_weight": "Peso da liga",
+        },
     )
-
-    st.subheader("Tabelas recomendadas")
-    schema = pd.DataFrame([
-        ["players", "Cadastro do jogador", "player_id, player_name, nationality, age, preferred_position"],
-        ["teams", "Cadastro dos clubes", "team_id, team_name, country, league_id"],
-        ["leagues", "Peso competitivo das ligas", "league_id, league_name, country, league_weight"],
-        ["player_season_stats", "Tabela fato de performance", "minutes, goals, assists, passes, duels, cards, rating"],
-        ["national_team_tests", "Escalações e testes da Seleção", "date, coach, opponent, formation, player, position_used"],
-        ["player_scores", "Resultado do modelo", "performance_score, minutes_score, league_score, final_score"],
-    ], columns=["Tabela", "Função", "Campos principais"])
-    st.dataframe(schema, use_container_width=True, hide_index=True)
-
-    st.subheader("Pipeline de processamento")
-    st.code(
-        """API-Football / CSV bruto
-    ↓
-data/raw
-    ↓
-Limpeza e padronização
-    ↓
-data/processed
-    ↓
-Feature engineering por 90 minutos
-    ↓
-Score multicritério
-    ↓
-Otimização da escalação
-    ↓
-Streamlit / Power BI / relatório""",
-        language="text",
-    )
-
-    st.subheader("Base carregada")
-    st.dataframe(raw_df, use_container_width=True, hide_index=True)
+    fig_scatter.update_layout(height=480, margin=dict(l=10, r=10, t=20, b=10))
+    st.plotly_chart(fig_scatter, use_container_width=True)
