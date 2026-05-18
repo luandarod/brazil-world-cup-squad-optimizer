@@ -2,10 +2,21 @@ import numpy as np
 import pandas as pd
 
 
+TEAM_COMPONENT_WEIGHTS = {
+    "base_strength": 0.25,
+    "attack_score": 0.17,
+    "midfield_score": 0.13,
+    "defense_score": 0.13,
+    "goalkeeper_score": 0.08,
+    "recent_form_score": 0.10,
+    "tournament_history_score": 0.07,
+    "market_depth_score": 0.07,
+}
+
+
 def win_probability(team_strength: float, opponent_strength: float, scale: float = 12.0) -> float:
     """
-    Probabilidade simplificada de vitória com base na diferença de força.
-    Usa uma curva logística. Empate é tratado separadamente na fase de grupos.
+    Simplified win probability from the difference between two team strength indexes.
     """
     diff = team_strength - opponent_strength
     return 1 / (1 + np.exp(-diff / scale))
@@ -13,8 +24,8 @@ def win_probability(team_strength: float, opponent_strength: float, scale: float
 
 def match_probabilities(team_strength: float, opponent_strength: float) -> dict:
     """
-    Retorna probabilidades de vitória, empate e derrota para fase de grupos.
-    O empate é mais provável quando as forças são próximas.
+    Group-stage probabilities: win, draw and loss.
+    Draw probability is higher when teams have similar strength.
     """
     diff = abs(team_strength - opponent_strength)
     draw_prob = max(0.18, 0.30 - diff * 0.006)
@@ -30,14 +41,36 @@ def match_probabilities(team_strength: float, opponent_strength: float) -> dict:
     }
 
 
+def calculate_composite_strength(components_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Builds a composite team-strength index from interpretable components.
+    This replaces a single opaque manual strength number.
+    """
+    df = components_df.copy()
+    df["composite_strength"] = 0.0
+
+    for feature, weight in TEAM_COMPONENT_WEIGHTS.items():
+        if feature not in df.columns:
+            raise ValueError(f"Missing component column: {feature}")
+        df["composite_strength"] += df[feature].astype(float) * weight
+
+    if "confidence_score" in df.columns:
+        # Low-confidence teams are slightly pulled toward the field average.
+        mean_strength = df["composite_strength"].mean()
+        confidence = df["confidence_score"].clip(0, 1)
+        df["adjusted_strength"] = df["composite_strength"] * confidence + mean_strength * (1 - confidence)
+    else:
+        df["adjusted_strength"] = df["composite_strength"]
+
+    df["adjusted_strength"] = df["adjusted_strength"].round(2)
+    return df
+
+
 def simulate_group_stage(group_df: pd.DataFrame, target_team: str = "Brazil", simulations: int = 10000, seed: int = 42) -> pd.DataFrame:
-    """
-    Simula a fase de grupos. Assume grupo com quatro seleções.
-    Retorna probabilidade de terminar em 1º, 2º, 3º ou 4º.
-    """
     rng = np.random.default_rng(seed)
     teams = group_df["team"].tolist()
-    strengths = dict(zip(group_df["team"], group_df["strength_index"]))
+    strength_col = "adjusted_strength" if "adjusted_strength" in group_df.columns else "strength_index"
+    strengths = dict(zip(group_df["team"], group_df[strength_col]))
     finish_counts = {1: 0, 2: 0, 3: 0, 4: 0}
 
     fixtures = []
@@ -71,8 +104,8 @@ def simulate_group_stage(group_df: pd.DataFrame, target_team: str = "Brazil", si
             "team": teams,
             "points": [points[t] for t in teams],
             "goal_balance_proxy": [goal_balance_proxy[t] for t in teams],
-            "strength_index": [strengths[t] for t in teams],
-        }).sort_values(["points", "goal_balance_proxy", "strength_index"], ascending=False).reset_index(drop=True)
+            "strength": [strengths[t] for t in teams],
+        }).sort_values(["points", "goal_balance_proxy", "strength"], ascending=False).reset_index(drop=True)
 
         position = int(table.index[table["team"] == target_team][0]) + 1
         finish_counts[position] += 1
@@ -85,8 +118,8 @@ def simulate_group_stage(group_df: pd.DataFrame, target_team: str = "Brazil", si
 
 def simulate_campaign(team_strength: float = 92.0, simulations: int = 10000, seed: int = 42) -> pd.DataFrame:
     """
-    Simula uma campanha simplificada de uma seleção no mata-mata.
-    A dificuldade média dos adversários aumenta a cada fase.
+    Simplified campaign simulation. Knockout difficulty increases by phase.
+    This is still a portfolio forecasting layer, not a betting model.
     """
     rng = np.random.default_rng(seed)
 
@@ -143,19 +176,47 @@ def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 1
 
 def compare_title_contenders(strength_df: pd.DataFrame, simulations: int = 10000, seed: int = 42, top_n: int = 10) -> pd.DataFrame:
     """
-    Compara as seleções mais fortes da base e estima chance relativa de título.
-    A probabilidade é normalizada entre os principais contenders para facilitar leitura de dashboard.
+    Backwards-compatible title comparison using a single strength_index column.
     """
     contenders = strength_df.sort_values("strength_index", ascending=False).head(top_n).copy()
+    return _compare_strength_values(contenders, "strength_index", simulations, seed)
+
+
+def compare_title_contenders_components(components_df: pd.DataFrame, simulations: int = 10000, seed: int = 42, top_n: int = 10) -> pd.DataFrame:
+    """
+    More robust title comparison using a composite strength index.
+    Components include attack, midfield, defense, goalkeeper, form, history and squad depth.
+    """
+    scored = calculate_composite_strength(components_df)
+    contenders = scored.sort_values("adjusted_strength", ascending=False).head(top_n).copy()
+    out = _compare_strength_values(contenders, "adjusted_strength", simulations, seed)
+
+    component_cols = [
+        "base_strength",
+        "attack_score",
+        "midfield_score",
+        "defense_score",
+        "goalkeeper_score",
+        "recent_form_score",
+        "tournament_history_score",
+        "market_depth_score",
+        "confidence_score",
+        "composite_strength",
+        "adjusted_strength",
+    ]
+    return out.merge(contenders[["team"] + component_cols], on="team", how="left")
+
+
+def _compare_strength_values(contenders: pd.DataFrame, strength_col: str, simulations: int, seed: int) -> pd.DataFrame:
     rows = []
 
     for i, row in contenders.reset_index(drop=True).iterrows():
-        campaign = simulate_campaign(float(row["strength_index"]), simulations=simulations, seed=seed + i)
+        campaign = simulate_campaign(float(row[strength_col]), simulations=simulations, seed=seed + i)
         stage_map = dict(zip(campaign["stage"], campaign["probability"]))
         raw_title_signal = stage_map.get("Champion", 0)
         rows.append({
             "team": row["team"],
-            "strength_index": float(row["strength_index"]),
+            "model_strength": float(row[strength_col]),
             "semifinal_probability": stage_map.get("Semifinal", 0),
             "final_probability": stage_map.get("Final", 0),
             "raw_title_signal": raw_title_signal,
