@@ -10,10 +10,7 @@ sys.path.append(str(ROOT))
 from src.feature_engineering import add_features
 from src.scoring_model import calculate_scores
 from src.squad_optimizer import select_best_xi, select_reserves, assign_squad_role
-from src.tournament_predictor import (
-    compare_title_contenders,
-    simulate_group_stage,
-)
+from src.tournament_predictor import compare_title_contenders
 
 st.set_page_config(
     page_title="Brazil World Cup Data Lab",
@@ -22,59 +19,301 @@ st.set_page_config(
 )
 
 ROLE_LABELS = {
-    "GK": "Goleiro", "RB": "Lateral direito", "CB": "Zagueiro", "LB": "Lateral esquerdo",
-    "DM_CM": "Volante/Meio central", "RW": "Ponta direita", "AM_SS": "Meia/Segundo atacante",
-    "LW": "Ponta esquerda", "ST": "Centroavante",
+    "GK": "Goleiro",
+    "RB": "Lateral direito",
+    "CB": "Zagueiro",
+    "LB": "Lateral esquerdo",
+    "DM_CM": "Volante/Meio central",
+    "RW": "Ponta direita",
+    "AM_SS": "Meia/Segundo atacante",
+    "LW": "Ponta esquerda",
+    "ST": "Centroavante",
 }
 
-TACTICAL_LINES = [["ST"], ["LW", "AM_SS", "RW"], ["DM_CM", "DM_CM"], ["LB", "CB", "CB", "RB"], ["GK"]]
+TACTICAL_LINES = [
+    ["ST"],
+    ["LW", "AM_SS", "RW"],
+    ["DM_CM", "DM_CM"],
+    ["LB", "CB", "CB", "RB"],
+    ["GK"],
+]
 
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
-    :root{--bg:#030303;--ink:#f7f5ef;--soft:#c9c4ba;--muted:#817d74;--line:rgba(247,245,239,.14);--panel:rgba(255,255,255,.045);--acid:#d7ff6f;--blue:#9fc8ff;--red:#ff7777;}
-    .stApp{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;}
-    .stApp:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 82% 4%,rgba(215,255,111,.11),transparent 25%),radial-gradient(circle at 8% 28%,rgba(159,200,255,.08),transparent 28%),linear-gradient(rgba(247,245,239,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(247,245,239,.025) 1px,transparent 1px);background-size:auto,auto,82px 82px,82px 82px;pointer-events:none;z-index:0;}
-    .block-container{padding-top:2rem;max-width:1280px;position:relative;z-index:1;}
-    h1,h2,h3,p,span,div{font-family:Inter,system-ui,sans-serif;}
-    [data-testid="stSidebar"]{background:#070707;border-right:1px solid var(--line);}
-    [data-testid="stSidebar"] *{color:var(--ink)!important;}
-    .hero{border:1px solid var(--line);border-radius:34px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.018));box-shadow:0 24px 80px rgba(0,0,0,.28);padding:30px;margin-bottom:22px;}
-    .eyebrow{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--acid);font-weight:800;margin-bottom:16px;}
-    .hero-title{font-size:clamp(48px,7vw,104px);line-height:.86;letter-spacing:-.085em;font-weight:900;color:var(--ink);margin:0;max-width:980px;}
-    .hero-title em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(247,245,239,.72);}
-    .hero-text{font-size:19px;line-height:1.35;color:#d7d2c8;max-width:900px;margin-top:24px;letter-spacing:-.03em;}
-    .metric-card,.section-card,.rationale-card,.player-card,.pipeline-card,.case-card{border:1px solid var(--line);background:var(--panel);border-radius:22px;padding:18px;box-shadow:0 14px 44px rgba(0,0,0,.18);}
-    .metric-card strong{display:block;font-size:32px;letter-spacing:-.06em;color:var(--ink);}
-    .metric-card span,.label{display:block;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;font-size:10px;letter-spacing:.09em;margin-bottom:6px;}
-    .muted{color:var(--soft);font-size:13px;line-height:1.45;}
-    .pitch{border:1px solid var(--line);border-radius:34px;padding:22px;background:radial-gradient(circle at 50% 44%,rgba(215,255,111,.09),transparent 28%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.018));box-shadow:0 24px 80px rgba(0,0,0,.25);}
-    .player-card{min-height:142px;text-align:center;background:rgba(3,3,3,.72);}
-    .player-role{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--acid);font-weight:800;text-transform:uppercase;letter-spacing:.09em;}
-    .player-name{font-size:22px;color:var(--ink);font-weight:900;letter-spacing:-.04em;margin-top:6px;}
-    .player-team{font-size:12px;color:var(--soft);margin-top:3px;}
-    .player-score{font-size:14px;color:var(--ink);font-weight:800;margin-top:9px;}
-    .player-reason{font-size:12px;color:#d7d2c8;line-height:1.25;margin-top:5px;}
-    .reason-title{font-size:18px;font-weight:850;color:var(--ink);letter-spacing:-.035em;margin-bottom:6px;}
-    .reason-text{font-size:14px;color:var(--soft);line-height:1.5;}
-    .chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:8px 10px;margin:4px;color:var(--soft);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;font-size:11px;background:rgba(255,255,255,.03);}
-    .case-hero{border:1px solid var(--line);border-radius:34px;background:linear-gradient(135deg,rgba(215,255,111,.075),rgba(255,255,255,.025));padding:28px;margin-bottom:18px;}
-    .case-title{font-size:clamp(36px,5vw,68px);line-height:.92;letter-spacing:-.075em;font-weight:900;color:var(--ink);margin:8px 0 14px;}
-    .case-lead{font-size:18px;line-height:1.42;color:#d7d2c8;max-width:980px;letter-spacing:-.025em;}
-    .case-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px;}
-    .case-card h3{font-size:24px;letter-spacing:-.05em;margin:8px 0 10px;color:var(--ink);}
-    .case-card p,.case-card li{font-size:14px;line-height:1.52;color:var(--soft);}
-    .case-card ul{margin:10px 0 0 18px;padding:0;}
-    .case-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0;}
-    .case-kpi{border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.03);}
-    .case-kpi strong{font-size:26px;letter-spacing:-.06em;color:var(--acid);display:block;}
-    .case-kpi span{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
-    div[data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:18px;overflow:hidden;}
-    .stTabs [data-baseweb="tab-list"]{gap:8px;border-bottom:1px solid var(--line);}
-    .stTabs [data-baseweb="tab"]{border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:rgba(255,255,255,.03);color:var(--soft);font-family:'IBM Plex Mono',monospace;}
-    .stTabs [aria-selected="true"]{background:var(--ink)!important;color:var(--bg)!important;}
-    @media(max-width:900px){.case-grid,.case-kpis{grid-template-columns:1fr}.hero-title{font-size:52px}}
+
+    :root{
+        --bg:#030303;
+        --ink:#f7f5ef;
+        --soft:#c9c4ba;
+        --muted:#817d74;
+        --line:rgba(247,245,239,.14);
+        --panel:rgba(255,255,255,.045);
+        --acid:#d7ff6f;
+        --blue:#9fc8ff;
+    }
+
+    .stApp{
+        background:var(--bg);
+        color:var(--ink);
+        font-family:Inter,system-ui,sans-serif;
+    }
+
+    .stApp:before{
+        content:"";
+        position:fixed;
+        inset:0;
+        background:
+            radial-gradient(circle at 82% 4%,rgba(215,255,111,.11),transparent 25%),
+            radial-gradient(circle at 8% 28%,rgba(159,200,255,.08),transparent 28%),
+            linear-gradient(rgba(247,245,239,.025) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(247,245,239,.025) 1px,transparent 1px);
+        background-size:auto,auto,82px 82px,82px 82px;
+        pointer-events:none;
+        z-index:0;
+    }
+
+    .block-container{
+        padding-top:2rem;
+        max-width:1280px;
+        position:relative;
+        z-index:1;
+    }
+
+    h1,h2,h3,p,span,div{
+        font-family:Inter,system-ui,sans-serif;
+    }
+
+    [data-testid="stSidebar"]{
+        background:#070707;
+        border-right:1px solid var(--line);
+    }
+
+    [data-testid="stSidebar"] *{
+        color:var(--ink)!important;
+    }
+
+    .hero,.case-hero{
+        border:1px solid var(--line);
+        border-radius:34px;
+        background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+        box-shadow:0 24px 80px rgba(0,0,0,.28);
+        padding:30px;
+        margin-bottom:22px;
+    }
+
+    .case-hero{
+        background:linear-gradient(135deg,rgba(215,255,111,.075),rgba(255,255,255,.025));
+    }
+
+    .eyebrow{
+        font-family:'IBM Plex Mono',monospace;
+        text-transform:uppercase;
+        letter-spacing:.16em;
+        font-size:12px;
+        color:var(--acid);
+        font-weight:800;
+        margin-bottom:16px;
+    }
+
+    .hero-title,.case-title{
+        font-size:clamp(48px,7vw,104px);
+        line-height:.86;
+        letter-spacing:-.085em;
+        font-weight:900;
+        color:var(--ink);
+        margin:0;
+        max-width:980px;
+    }
+
+    .case-title{
+        font-size:clamp(38px,5vw,72px);
+        line-height:.92;
+    }
+
+    .hero-title em{
+        font-style:normal;
+        color:transparent;
+        -webkit-text-stroke:1px rgba(247,245,239,.72);
+    }
+
+    .hero-text,.case-lead{
+        font-size:19px;
+        line-height:1.38;
+        color:#d7d2c8;
+        max-width:980px;
+        margin-top:24px;
+        letter-spacing:-.03em;
+    }
+
+    .metric-card,.section-card,.rationale-card,.player-card,.case-card,.case-kpi{
+        border:1px solid var(--line);
+        background:var(--panel);
+        border-radius:22px;
+        padding:18px;
+        box-shadow:0 14px 44px rgba(0,0,0,.18);
+    }
+
+    .metric-card strong{
+        display:block;
+        font-size:32px;
+        letter-spacing:-.06em;
+        color:var(--ink);
+    }
+
+    .metric-card span,.label,.case-kpi span{
+        display:block;
+        color:var(--muted);
+        font-family:'IBM Plex Mono',monospace;
+        text-transform:uppercase;
+        font-size:10px;
+        letter-spacing:.09em;
+        margin-bottom:6px;
+    }
+
+    .muted{
+        color:var(--soft);
+        font-size:13px;
+        line-height:1.45;
+    }
+
+    .pitch{
+        border:1px solid var(--line);
+        border-radius:34px;
+        padding:22px;
+        background:radial-gradient(circle at 50% 44%,rgba(215,255,111,.09),transparent 28%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.018));
+        box-shadow:0 24px 80px rgba(0,0,0,.25);
+    }
+
+    .player-card{
+        min-height:142px;
+        text-align:center;
+        background:rgba(3,3,3,.72);
+    }
+
+    .player-role{
+        font-family:'IBM Plex Mono',monospace;
+        font-size:10px;
+        color:var(--acid);
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.09em;
+    }
+
+    .player-name{
+        font-size:22px;
+        color:var(--ink);
+        font-weight:900;
+        letter-spacing:-.04em;
+        margin-top:6px;
+    }
+
+    .player-team{
+        font-size:12px;
+        color:var(--soft);
+        margin-top:3px;
+    }
+
+    .player-score{
+        font-size:14px;
+        color:var(--ink);
+        font-weight:800;
+        margin-top:9px;
+    }
+
+    .player-reason{
+        font-size:12px;
+        color:#d7d2c8;
+        line-height:1.25;
+        margin-top:5px;
+    }
+
+    .reason-title{
+        font-size:18px;
+        font-weight:850;
+        color:var(--ink);
+        letter-spacing:-.035em;
+        margin-bottom:6px;
+    }
+
+    .reason-text,.case-card p,.case-card li{
+        font-size:14px;
+        color:var(--soft);
+        line-height:1.52;
+    }
+
+    .chip{
+        display:inline-block;
+        border:1px solid var(--line);
+        border-radius:999px;
+        padding:8px 10px;
+        margin:4px;
+        color:var(--soft);
+        font-family:'IBM Plex Mono',monospace;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        font-size:11px;
+        background:rgba(255,255,255,.03);
+    }
+
+    .case-grid{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+        margin-top:14px;
+    }
+
+    .case-card h3{
+        font-size:24px;
+        letter-spacing:-.05em;
+        margin:8px 0 10px;
+        color:var(--ink);
+    }
+
+    .case-kpis{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:10px;
+        margin:14px 0;
+    }
+
+    .case-kpi strong{
+        font-size:26px;
+        letter-spacing:-.06em;
+        color:var(--acid);
+        display:block;
+    }
+
+    div[data-testid="stDataFrame"]{
+        border:1px solid var(--line);
+        border-radius:18px;
+        overflow:hidden;
+    }
+
+    .stTabs [data-baseweb="tab-list"]{
+        gap:8px;
+        border-bottom:1px solid var(--line);
+    }
+
+    .stTabs [data-baseweb="tab"]{
+        border:1px solid var(--line);
+        border-radius:999px;
+        padding:8px 14px;
+        background:rgba(255,255,255,.03);
+        color:var(--soft);
+        font-family:'IBM Plex Mono',monospace;
+    }
+
+    .stTabs [aria-selected="true"]{
+        background:var(--ink)!important;
+        color:var(--bg)!important;
+    }
+
+    @media(max-width:900px){
+        .case-grid,.case-kpis{grid-template-columns:1fr}
+        .hero-title{font-size:52px}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -91,7 +330,10 @@ def load_team_strength():
 
 
 def metric_card(label, value, note):
-    st.markdown(f"<div class='metric-card'><span>{label}</span><strong>{value}</strong><div class='muted'>{note}</div></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='metric-card'><span>{label}</span><strong>{value}</strong><div class='muted'>{note}</div></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def compact_xi(xi):
@@ -213,13 +455,22 @@ total_goals = int(xi["goals"].sum())
 total_assists = int(xi["assists"].sum())
 
 m1, m2, m3, m4 = st.columns(4)
-with m1: metric_card("Score médio do XI", avg_score, "Média dos titulares sugeridos")
-with m2: metric_card("Minutos do XI", f"{total_minutes:,}".replace(",", "."), "Ritmo competitivo agregado")
-with m3: metric_card("Gols do XI", total_goals, "Produção recente da base")
-with m4: metric_card("Assistências", total_assists, "Criação direta de gols")
+with m1:
+    metric_card("Score médio do XI", avg_score, "Média dos titulares sugeridos")
+with m2:
+    metric_card("Minutos do XI", f"{total_minutes:,}".replace(",", "."), "Ritmo competitivo agregado")
+with m3:
+    metric_card("Gols do XI", total_goals, "Produção recente da base")
+with m4:
+    metric_card("Assistências", total_assists, "Criação direta de gols")
 
 xi_tab, contenders_tab, method_tab, about_tab, api_tab, tables_tab = st.tabs([
-    "XI + Raciocínio", "Top 10 favoritas", "Método estatístico", "About this model", "Database/API", "Tabelas"
+    "XI + Raciocínio",
+    "Top 10 favoritas",
+    "Método estatístico",
+    "About this model",
+    "Database/API",
+    "Tabelas",
 ])
 
 with xi_tab:
@@ -227,126 +478,178 @@ with xi_tab:
     render_tactical_board(xi)
     st.markdown("### Por que esses 11 foram escolhidos")
     for _, row in xi.sort_values("squad_position").iterrows():
-        st.markdown(f"<div class='rationale-card'><div class='reason-title'>{row['player_name']} — {ROLE_LABELS.get(row['squad_position'], row['squad_position'])}</div><div class='reason-text'>{explain_choice(row, df)}</div></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='rationale-card'><div class='reason-title'>{row['player_name']} — {ROLE_LABELS.get(row['squad_position'], row['squad_position'])}</div><div class='reason-text'>{explain_choice(row, df)}</div></div>",
+            unsafe_allow_html=True,
+        )
 
 with contenders_tab:
     st.markdown("### As 10 seleções mais prováveis de ganhar a Copa")
-    st.markdown("<div class='muted'>A comparação usa o índice de força das seleções e uma simulação Monte Carlo simplificada. A chance de título é normalizada entre as 10 maiores forças da base para facilitar a leitura comparativa.</div>", unsafe_allow_html=True)
-    fig = px.bar(contenders, x="title_probability_pct", y="team", orientation="h", text="title_probability_pct", hover_data=["strength_index", "final_probability_pct", "semifinal_probability_pct"], labels={"title_probability_pct":"Chance de título (%)", "team":"Seleção"})
+    st.markdown(
+        "<div class='muted'>A comparação usa o índice de força das seleções e uma simulação Monte Carlo simplificada. A chance de título é normalizada entre as 10 maiores forças da base para facilitar a leitura comparativa.</div>",
+        unsafe_allow_html=True,
+    )
+    fig = px.bar(
+        contenders,
+        x="title_probability_pct",
+        y="team",
+        orientation="h",
+        text="title_probability_pct",
+        hover_data=["strength_index", "final_probability_pct", "semifinal_probability_pct"],
+        labels={"title_probability_pct": "Chance de título (%)", "team": "Seleção"},
+    )
     fig.update_traces(texttemplate="%{text}%", textposition="outside")
-    fig.update_layout(height=520, yaxis={"categoryorder":"total ascending"}, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#f7f5ef", margin=dict(l=10,r=10,t=20,b=10))
+    fig.update_layout(
+        height=520,
+        yaxis={"categoryorder": "total ascending"},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#f7f5ef",
+        margin=dict(l=10, r=10, t=20, b=10),
+    )
     st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(contenders[["team", "strength_index", "title_probability_pct", "final_probability_pct", "semifinal_probability_pct"]], use_container_width=True, hide_index=True)
+    st.dataframe(
+        contenders[["team", "strength_index", "title_probability_pct", "final_probability_pct", "semifinal_probability_pct"]],
+        use_container_width=True,
+        hide_index=True,
+    )
 
     brazil_row = contenders[contenders["team"] == "Brazil"]
     if not brazil_row.empty:
         r = brazil_row.iloc[0]
-        st.markdown(f"<div class='section-card'><div class='reason-title'>Leitura do Brasil</div><div class='reason-text'>Com strength index {r['strength_index']:.0f}, o Brasil aparece com {r['title_probability_pct']:.1f}% de chance relativa de título entre as 10 candidatas analisadas. A chance estimada de final é {r['final_probability_pct']:.1f}% e a de semifinal é {r['semifinal_probability_pct']:.1f}%.</div></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='section-card'><div class='reason-title'>Leitura do Brasil</div><div class='reason-text'>Com strength index {r['strength_index']:.0f}, o Brasil aparece com {r['title_probability_pct']:.1f}% de chance relativa de título entre as 10 candidatas analisadas. A chance estimada de final é {r['final_probability_pct']:.1f}% e a de semifinal é {r['semifinal_probability_pct']:.1f}%.</div></div>",
+            unsafe_allow_html=True,
+        )
 
 with method_tab:
     st.markdown("### Documentação do raciocínio estatístico")
-    st.markdown("""
-    O modelo trabalha em duas camadas. Primeiro, calcula a força individual dos jogadores por função. Depois, usa a força agregada do Brasil para comparar a Seleção com outras candidatas ao título.
+    st.markdown(
+        """
+        O modelo trabalha em duas camadas. Primeiro, calcula a força individual dos jogadores por função.
+        Depois, usa a força agregada do Brasil para comparar a Seleção com outras candidatas ao título.
 
-    A escolha do XI segue esta lógica: filtra jogadores com minutagem mínima, cria métricas por 90 minutos, aplica peso por liga, normaliza tudo em escala comparável, calcula score final e seleciona o melhor jogador dentro de cada função do 4-2-3-1.
-    """)
-    st.code("""Score Final =
+        A escolha do XI segue esta lógica: filtra jogadores com minutagem mínima, cria métricas por 90 minutos,
+        aplica peso por liga, normaliza tudo em escala comparável, calcula score final e seleciona o melhor jogador
+        dentro de cada função do 4-2-3-1.
+        """
+    )
+    st.code(
+        """Score Final =
 0.30 * performance por posição
 + 0.20 * minutagem
 + 0.15 * nível da liga
 + 0.15 * forma recente
 + 0.10 * uso/teste na Seleção
-+ 0.10 * encaixe tático""", language="text")
++ 0.10 * encaixe tático""",
+        language="text",
+    )
     st.markdown("#### Ranking por função")
     rr = role_ranking(df)
     st.dataframe(rr, use_container_width=True, hide_index=True)
 
 with about_tab:
-    st.markdown("""
-    <div class='case-hero'>
-      <div class='eyebrow'>About this model / Portfolio case</div>
-      <div class='case-title'>A decision model for Brazil's World Cup squad and title outlook.</div>
-      <div class='case-lead'>
-        This project turns football squad selection into a transparent data product. It combines player-season statistics,
-        tactical role mapping, league-strength adjustments and a Monte Carlo layer to explain both who should start for Brazil
-        and how the team compares with other title contenders.
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class='case-hero'>
+          <div class='eyebrow'>About this model / Portfolio case</div>
+          <div class='case-title'>A decision model for Brazil's World Cup squad and title outlook.</div>
+          <div class='case-lead'>
+            This project turns football squad selection into a transparent data product. It combines player-season statistics,
+            tactical role mapping, league-strength adjustments and a Monte Carlo layer to explain both who should start for Brazil
+            and how the team compares with other title contenders.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("""
-    <div class='case-kpis'>
-      <div class='case-kpi'><span>Use case</span><strong>Squad intelligence</strong></div>
-      <div class='case-kpi'><span>Core stack</span><strong>Python + Streamlit</strong></div>
-      <div class='case-kpi'><span>Data model</span><strong>PostgreSQL-ready</strong></div>
-      <div class='case-kpi'><span>Prediction layer</span><strong>Monte Carlo</strong></div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class='case-kpis'>
+          <div class='case-kpi'><span>Use case</span><strong>Squad intelligence</strong></div>
+          <div class='case-kpi'><span>Core stack</span><strong>Python + Streamlit</strong></div>
+          <div class='case-kpi'><span>Data model</span><strong>PostgreSQL-ready</strong></div>
+          <div class='case-kpi'><span>Prediction layer</span><strong>Monte Carlo</strong></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("""
-    <div class='case-grid'>
-      <div class='case-card'>
-        <div class='eyebrow'>01 / Problem</div>
-        <h3>Selection debates are usually subjective.</h3>
-        <p>National-team selection is often argued through reputation, recency bias and club popularity. This model reframes the question as a decision problem: which players deliver the strongest evidence for each tactical role?</p>
-      </div>
-      <div class='case-card'>
-        <div class='eyebrow'>02 / Product question</div>
-        <h3>Who should start, and how far can Brazil go?</h3>
-        <p>The dashboard answers two linked questions: the best XI by role inside a 4-2-3-1 structure, and Brazil's relative title outlook compared with the strongest international contenders.</p>
-      </div>
-      <div class='case-card'>
-        <div class='eyebrow'>03 / Data architecture</div>
-        <h3>Built as a data product, not only a notebook.</h3>
-        <p>The MVP reads CSV files, but the schema is designed for a relational database with players, teams, leagues, player-season stats, national-team tests, player scores and national-team strength indexes.</p>
-      </div>
-      <div class='case-card'>
-        <div class='eyebrow'>04 / Method</div>
-        <h3>Players compete inside their real tactical role.</h3>
-        <p>The model normalizes statistics, adjusts for league strength, applies role mapping and ranks players within their position. This avoids comparing a striker's goals directly with a fullback's defensive value.</p>
-      </div>
-      <div class='case-card'>
-        <div class='eyebrow'>05 / Prediction</div>
-        <h3>Title odds are estimated as a comparative signal.</h3>
-        <p>The contender view uses a simplified Monte Carlo simulation based on a national-team strength index. It is not a betting model; it is a transparent scenario layer for comparing Brazil with elite teams.</p>
-      </div>
-      <div class='case-card'>
-        <div class='eyebrow'>06 / Output</div>
-        <h3>The result is explainable by design.</h3>
-        <p>Each starter includes a written explanation showing score, minutes, league weight, key metric and direct competitor. The dashboard is meant to support discussion, not hide the reasoning behind a black-box output.</p>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class='case-grid'>
+          <div class='case-card'>
+            <div class='eyebrow'>01 / Context</div>
+            <h3>Football selection is a decision problem.</h3>
+            <p>National-team selection is often discussed through reputation, club popularity and recent highlights. This model reframes the debate as a structured analytical question: which players provide the strongest evidence for each tactical role?</p>
+          </div>
+          <div class='case-card'>
+            <div class='eyebrow'>02 / Product question</div>
+            <h3>Who should start, and how competitive is Brazil?</h3>
+            <p>The dashboard answers two linked questions: the best XI by role inside a 4-2-3-1 structure, and Brazil's relative title outlook compared with other elite international teams.</p>
+          </div>
+          <div class='case-card'>
+            <div class='eyebrow'>03 / Data architecture</div>
+            <h3>Designed as a data product.</h3>
+            <p>The MVP reads CSV files, but the schema is structured for a relational database with players, teams, leagues, player-season stats, national-team tests, player scores and national-team strength indexes.</p>
+          </div>
+          <div class='case-card'>
+            <div class='eyebrow'>04 / Method</div>
+            <h3>Players compete inside their actual role.</h3>
+            <p>The model normalizes statistics, adjusts for league strength, maps players to tactical functions and ranks them within position. A striker is not compared directly with a fullback; each role has its own decision context.</p>
+          </div>
+          <div class='case-card'>
+            <div class='eyebrow'>05 / Prediction layer</div>
+            <h3>Title outlook as a comparative signal.</h3>
+            <p>The contender view uses a simplified Monte Carlo simulation based on a national-team strength index. It is not a betting model. It is a transparent scenario layer for comparing Brazil with other title candidates.</p>
+          </div>
+          <div class='case-card'>
+            <div class='eyebrow'>06 / Explainability</div>
+            <h3>Every selection has a visible rationale.</h3>
+            <p>Each starter includes a written explanation showing score, minutes, league weight, key metric and direct competitor. The dashboard is built to make the reasoning inspectable rather than hidden inside a black box.</p>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("### What I would say in an interview")
-    st.markdown("""
-    I built this project as a decision-intelligence case. Instead of creating a generic football dashboard, I structured the problem like a product: define the decision, model the data, expose the method, show the output and document the limitations. The current MVP uses sample data, but the architecture is ready to connect to API-Football or a PostgreSQL/BigQuery layer.
-
-    The key design choice was to select by tactical role rather than global ranking. A national team does not need the eleven highest-scoring players in the dataset; it needs the best available player for each role. That is why the dashboard ranks players by function and then explains every selection.
-    """)
+    st.markdown("### Project scope")
+    st.markdown(
+        """
+        The model is built as an analytical prototype for portfolio demonstration. It shows how a sports analytics problem can be handled with the same structure used in business intelligence and decision-support products: define the question, model the data, design a scoring method, expose the assumptions and communicate the output clearly.
+        """
+    )
 
     st.markdown("### Limitations and roadmap")
-    st.markdown("""
-    **Current limitations:** sample data, manual league weights, simplified strength index, no live injury feed, no official World Cup draw simulation, and no advanced event data such as xG, xA, progressive carries or pressing.
+    st.markdown(
+        """
+        **Current limitations:** sample data, manual league weights, simplified strength index, no live injury feed, no official World Cup draw simulation and no advanced event data such as xG, xA, progressive carries or pressing.
 
-    **Next iterations:** connect API-Football, store raw and processed data in PostgreSQL, add official FIFA/Elo rankings, ingest national-team lineups, include injuries and minutes trend, and replace the simplified title comparison with full tournament bracket simulation once groups and paths are defined.
-    """)
+        **Next iterations:** connect API-Football, store raw and processed data in PostgreSQL, add official FIFA/Elo rankings, ingest national-team lineups, include injuries and minutes trend, and replace the simplified title comparison with full tournament bracket simulation once groups and paths are defined.
+        """
+    )
 
 with api_tab:
     st.markdown("### Database/API documentation")
-    schema = pd.DataFrame([
-        ["players", "Dimensão", "Cadastro dos jogadores brasileiros elegíveis"],
-        ["teams", "Dimensão", "Clubes, país e liga principal"],
-        ["leagues", "Dimensão", "Peso competitivo de cada liga"],
-        ["player_season_stats", "Fato", "Minutos, gols, assists, passes, duelos, cartões e rating"],
-        ["national_team_tests", "Fato", "Jogos/testes da Seleção, formação e função usada"],
-        ["player_scores", "Modelo", "Scores calculados por função e temporada"],
-        ["team_strength_index", "Modelo", "Força estimada das seleções para simulação da Copa"],
-    ], columns=["Tabela", "Tipo", "Descrição"])
+    schema = pd.DataFrame(
+        [
+            ["players", "Dimensão", "Cadastro dos jogadores brasileiros elegíveis"],
+            ["teams", "Dimensão", "Clubes, país e liga principal"],
+            ["leagues", "Dimensão", "Peso competitivo de cada liga"],
+            ["player_season_stats", "Fato", "Minutos, gols, assists, passes, duelos, cartões e rating"],
+            ["national_team_tests", "Fato", "Jogos/testes da Seleção, formação e função usada"],
+            ["player_scores", "Modelo", "Scores calculados por função e temporada"],
+            ["team_strength_index", "Modelo", "Força estimada das seleções para simulação da Copa"],
+        ],
+        columns=["Tabela", "Tipo", "Descrição"],
+    )
     st.dataframe(schema, use_container_width=True, hide_index=True)
-    st.markdown("""
-    **Estrutura recomendada:** MVP em CSV + pandas; versão técnica em PostgreSQL; versão cloud em BigQuery + dbt/SQL. O app hoje lê CSV, mas a modelagem já está pronta para virar tabelas relacionais.
-    """)
+    st.markdown(
+        """
+        **Estrutura recomendada:** MVP em CSV + pandas; versão técnica em PostgreSQL; versão cloud em BigQuery + dbt/SQL. O app hoje lê CSV, mas a modelagem já está pronta para virar tabelas relacionais.
+        """
+    )
     st.markdown("#### Base carregada")
     st.dataframe(raw_df, use_container_width=True, hide_index=True)
 
@@ -355,8 +658,29 @@ with tables_tab:
     st.markdown("#### Titulares")
     st.dataframe(compact_xi(xi), use_container_width=True, hide_index=True)
     st.markdown("#### Reservas")
-    st.dataframe(reserves[["player_name", "team", "league", "position", "score_final", "minutes", "goals", "assists", "rating"]], use_container_width=True, hide_index=True)
+    st.dataframe(
+        reserves[["player_name", "team", "league", "position", "score_final", "minutes", "goals", "assists", "rating"]],
+        use_container_width=True,
+        hide_index=True,
+    )
     st.markdown("#### Produção ofensiva x minutagem")
-    fig_scatter = px.scatter(df, x="minutes", y="goal_contributions_p90", size="score_final", hover_name="player_name", color="league_weight", labels={"minutes":"Minutos", "goal_contributions_p90":"Gols + assistências por 90", "league_weight":"Peso da liga"})
-    fig_scatter.update_layout(height=480, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#f7f5ef")
+    fig_scatter = px.scatter(
+        df,
+        x="minutes",
+        y="goal_contributions_p90",
+        size="score_final",
+        hover_name="player_name",
+        color="league_weight",
+        labels={
+            "minutes": "Minutos",
+            "goal_contributions_p90": "Gols + assistências por 90",
+            "league_weight": "Peso da liga",
+        },
+    )
+    fig_scatter.update_layout(
+        height=480,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#f7f5ef",
+    )
     st.plotly_chart(fig_scatter, use_container_width=True)
