@@ -1,0 +1,10 @@
+league,country,league_weight
+Premier League,England,1.00
+LaLiga,Spain,0.95
+Serie A,Italy,0.92
+Bundesliga,Germany,0.90
+Ligue 1,France,0.86
+Brasileirão Série A,Brazil,0.82
+Saudi Pro League,Saudi Arabia,0.72
+Premier League Russia,Russia,0.70
+Süper Lig,Turkey,0.70
