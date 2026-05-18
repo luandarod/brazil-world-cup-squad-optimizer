@@ -83,9 +83,9 @@ def simulate_group_stage(group_df: pd.DataFrame, target_team: str = "Brazil", si
     ])
 
 
-def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 10000, seed: int = 42) -> pd.DataFrame:
+def simulate_campaign(team_strength: float = 92.0, simulations: int = 10000, seed: int = 42) -> pd.DataFrame:
     """
-    Simula uma campanha simplificada do Brasil no mata-mata.
+    Simula uma campanha simplificada de uma seleção no mata-mata.
     A dificuldade média dos adversários aumenta a cada fase.
     """
     rng = np.random.default_rng(seed)
@@ -108,8 +108,7 @@ def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 1
         "Champion": 0,
     }
 
-    # Probabilidade base de classificação. Em uma versão completa, isso vem da simulação do grupo.
-    group_advance_probability = 0.93
+    group_advance_probability = min(0.97, max(0.72, 0.74 + (team_strength - 75) * 0.011))
 
     for _ in range(simulations):
         if rng.random() > group_advance_probability:
@@ -125,7 +124,7 @@ def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 1
             if stage != "Round of 32":
                 reached[stage] += 1
 
-            p_win = win_probability(brazil_strength, opponent_strength, scale=10.0)
+            p_win = win_probability(team_strength, opponent_strength, scale=10.0)
             if rng.random() > p_win:
                 alive = False
 
@@ -136,3 +135,41 @@ def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 1
         {"stage": stage, "probability": count / simulations}
         for stage, count in reached.items()
     ])
+
+
+def simulate_brazil_campaign(brazil_strength: float = 92.0, simulations: int = 10000, seed: int = 42) -> pd.DataFrame:
+    return simulate_campaign(team_strength=brazil_strength, simulations=simulations, seed=seed)
+
+
+def compare_title_contenders(strength_df: pd.DataFrame, simulations: int = 10000, seed: int = 42, top_n: int = 10) -> pd.DataFrame:
+    """
+    Compara as seleções mais fortes da base e estima chance relativa de título.
+    A probabilidade é normalizada entre os principais contenders para facilitar leitura de dashboard.
+    """
+    contenders = strength_df.sort_values("strength_index", ascending=False).head(top_n).copy()
+    rows = []
+
+    for i, row in contenders.reset_index(drop=True).iterrows():
+        campaign = simulate_campaign(float(row["strength_index"]), simulations=simulations, seed=seed + i)
+        stage_map = dict(zip(campaign["stage"], campaign["probability"]))
+        raw_title_signal = stage_map.get("Champion", 0)
+        rows.append({
+            "team": row["team"],
+            "strength_index": float(row["strength_index"]),
+            "semifinal_probability": stage_map.get("Semifinal", 0),
+            "final_probability": stage_map.get("Final", 0),
+            "raw_title_signal": raw_title_signal,
+        })
+
+    out = pd.DataFrame(rows)
+    total_signal = out["raw_title_signal"].sum()
+    if total_signal > 0:
+        out["title_probability"] = out["raw_title_signal"] / total_signal
+    else:
+        out["title_probability"] = 0
+
+    out["title_probability_pct"] = (out["title_probability"] * 100).round(1)
+    out["final_probability_pct"] = (out["final_probability"] * 100).round(1)
+    out["semifinal_probability_pct"] = (out["semifinal_probability"] * 100).round(1)
+
+    return out.sort_values("title_probability", ascending=False).reset_index(drop=True)
