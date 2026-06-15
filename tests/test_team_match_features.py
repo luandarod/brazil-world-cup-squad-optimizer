@@ -66,50 +66,46 @@ def test_build_team_match_features_adds_shifted_recent_form_averages() -> None:
     featured = build_team_match_features(matches)
 
     assert matches.equals(original_matches)
-    assert featured[["team", "match_id"]].to_dict("records") == [
-        {"team": "Argentina", "match_id": "arg-1"},
-        {"team": "Argentina", "match_id": "arg-2"},
-        {"team": "Brazil", "match_id": "bra-1"},
-        {"team": "Brazil", "match_id": "bra-2"},
-        {"team": "Brazil", "match_id": "bra-3"},
-        {"team": "Brazil", "match_id": "bra-4"},
-    ]
+    assert featured["match_id"].tolist() == matches["match_id"].tolist()
     assert str(featured["match_date"].dtype) == "datetime64[ns]"
-    assert featured[
-        [
-            "team_goals_avg_last_3",
-            "team_cards_avg_last_3",
-            "team_shots_avg_last_3",
-        ]
-    ].round(6).to_dict("records") == [
-        {
-            "team_goals_avg_last_3": 0.0,
-            "team_cards_avg_last_3": 0.0,
-            "team_shots_avg_last_3": 0.0,
-        },
-        {
-            "team_goals_avg_last_3": 1.0,
-            "team_cards_avg_last_3": 4.0,
-            "team_shots_avg_last_3": 5.0,
-        },
-        {
-            "team_goals_avg_last_3": 0.0,
-            "team_cards_avg_last_3": 0.0,
-            "team_shots_avg_last_3": 0.0,
-        },
-        {
-            "team_goals_avg_last_3": 1.0,
-            "team_cards_avg_last_3": 2.0,
-            "team_shots_avg_last_3": 3.0,
-        },
-        {
+    feature_columns = [
+        "team_goals_avg_last_3",
+        "team_cards_avg_last_3",
+        "team_shots_avg_last_3",
+    ]
+    feature_by_match = (
+        featured.set_index("match_id")[feature_columns].round(6).to_dict("index")
+    )
+
+    assert feature_by_match == {
+        "bra-3": {
             "team_goals_avg_last_3": 2.0,
             "team_cards_avg_last_3": 3.0,
             "team_shots_avg_last_3": 6.0,
         },
-        {
+        "arg-2": {
+            "team_goals_avg_last_3": 1.0,
+            "team_cards_avg_last_3": 4.0,
+            "team_shots_avg_last_3": 5.0,
+        },
+        "bra-1": {
+            "team_goals_avg_last_3": 0.0,
+            "team_cards_avg_last_3": 0.0,
+            "team_shots_avg_last_3": 0.0,
+        },
+        "bra-4": {
             "team_goals_avg_last_3": 2.0,
             "team_cards_avg_last_3": 2.333333,
             "team_shots_avg_last_3": 6.0,
         },
-    ]
+        "arg-1": {
+            "team_goals_avg_last_3": 0.0,
+            "team_cards_avg_last_3": 0.0,
+            "team_shots_avg_last_3": 0.0,
+        },
+        "bra-2": {
+            "team_goals_avg_last_3": 1.0,
+            "team_cards_avg_last_3": 2.0,
+            "team_shots_avg_last_3": 3.0,
+        },
+    }

@@ -5,8 +5,11 @@ import pandas as pd
 
 def build_team_match_features(matches: pd.DataFrame) -> pd.DataFrame:
     featured = matches.copy()
+    featured["_original_row_order"] = range(len(featured))
     featured["match_date"] = pd.to_datetime(featured["match_date"])
-    featured = featured.sort_values(["team", "match_date"]).reset_index(drop=True)
+    featured = featured.sort_values(["team", "match_date", "_original_row_order"]).reset_index(
+        drop=True
+    )
 
     feature_specs = {
         "goals_for": "team_goals_avg_last_3",
@@ -21,4 +24,8 @@ def build_team_match_features(matches: pd.DataFrame) -> pd.DataFrame:
             .fillna(0.0)
         )
 
-    return featured
+    return (
+        featured.sort_values("_original_row_order")
+        .drop(columns="_original_row_order")
+        .reset_index(drop=True)
+    )
