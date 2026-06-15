@@ -1,17 +1,19 @@
-from datetime import date
-
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class TeamMatchTruthRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     match_id: str
+    match_date: str
+    stage: str
     team: str
     opponent: str
-    match_date: date
-    goals_for: int = Field(ge=0)
-    goals_against: int = Field(ge=0)
+    is_home_team: bool
+    goals_for: int
+    cards_for: int
+    shots_for: int
+    source: str
 
 
 class PredictionRow(BaseModel):
@@ -19,8 +21,6 @@ class PredictionRow(BaseModel):
 
     match_id: str
     team: str
-    opponent: str
-    match_date: date
-    predicted_goals_for: float = Field(ge=0)
-    predicted_goals_against: float = Field(ge=0)
-    win_probability: float = Field(ge=0, le=1)
+    model_name: str
+    target_name: str
+    predicted_value: float
