@@ -9,15 +9,11 @@ from src.ingestion.market_parser import normalize_market_row
 
 MARKET_DATASET_COLUMNS = [
     "match_id",
-    "match_date",
-    "stage",
     "team",
     "opponent",
-    "is_home_team",
-    "team_win_odds",
-    "draw_odds",
-    "opponent_win_odds",
-    "source",
+    "expected_goals_market",
+    "expected_cards_market",
+    "expected_shots_market",
 ]
 
 

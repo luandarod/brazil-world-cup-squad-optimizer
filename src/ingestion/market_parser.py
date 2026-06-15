@@ -3,37 +3,30 @@ from __future__ import annotations
 
 def normalize_market_row(raw_row: dict) -> list[dict]:
     match_id = raw_row["match_id"]
-    match_date = raw_row["match_date"]
-    stage = raw_row["stage"]
     home_team = raw_row["home_team"]
     away_team = raw_row["away_team"]
-    home_win_odds = raw_row["home_win_odds"]
-    draw_odds = raw_row["draw_odds"]
-    away_win_odds = raw_row["away_win_odds"]
+    home_goal_line = raw_row["home_goal_line"]
+    away_goal_line = raw_row["away_goal_line"]
+    home_cards_line = raw_row["home_cards_line"]
+    away_cards_line = raw_row["away_cards_line"]
+    home_shots_line = raw_row["home_shots_line"]
+    away_shots_line = raw_row["away_shots_line"]
 
     return [
         {
             "match_id": match_id,
-            "match_date": match_date,
-            "stage": stage,
             "team": home_team,
             "opponent": away_team,
-            "is_home_team": True,
-            "team_win_odds": home_win_odds,
-            "draw_odds": draw_odds,
-            "opponent_win_odds": away_win_odds,
-            "source": "market",
+            "expected_goals_market": home_goal_line,
+            "expected_cards_market": home_cards_line,
+            "expected_shots_market": home_shots_line,
         },
         {
             "match_id": match_id,
-            "match_date": match_date,
-            "stage": stage,
             "team": away_team,
             "opponent": home_team,
-            "is_home_team": False,
-            "team_win_odds": away_win_odds,
-            "draw_odds": draw_odds,
-            "opponent_win_odds": home_win_odds,
-            "source": "market",
+            "expected_goals_market": away_goal_line,
+            "expected_cards_market": away_cards_line,
+            "expected_shots_market": away_shots_line,
         },
     ]
