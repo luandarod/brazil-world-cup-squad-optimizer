@@ -7,12 +7,30 @@ import pandas as pd
 from src.ingestion.fifa_client import FIFAClient
 from src.ingestion.fifa_parser import parse_team_match_rows
 
+TRUTH_DATASET_COLUMNS = [
+    "match_id",
+    "match_date",
+    "stage",
+    "team",
+    "opponent",
+    "is_home_team",
+    "goals_for",
+    "cards_for",
+    "shots_for",
+    "source",
+]
+
 
 def build_truth_dataset(raw_matches: list[dict]) -> pd.DataFrame:
     rows: list[dict] = []
     for raw_match in raw_matches:
         rows.extend(parse_team_match_rows(raw_match))
-    return pd.DataFrame(rows)
+
+    dataset = pd.DataFrame(rows, columns=TRUTH_DATASET_COLUMNS)
+    if dataset.empty:
+        return dataset
+
+    return dataset.sort_values(["match_date", "match_id", "team"]).reset_index(drop=True)
 
 
 if __name__ == "__main__":
