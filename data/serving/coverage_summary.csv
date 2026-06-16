@@ -1,0 +1,4 @@
+metric_name,covered_matches,total_matches,coverage_pct,has_truth
+goals,16,16,100.0,True
+cards,0,16,0.0,False
+shots,16,16,100.0,True

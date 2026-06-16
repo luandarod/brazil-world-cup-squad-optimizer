@@ -1,0 +1,17 @@
+match_id,match_date,stage,home_team,away_team,home_goals,away_goals,home_shots,away_shots,status,source,source_retrieved_at
+760415,2026-06-11,Group A,Mexico,South Africa,2,0,16,3,Full Time,espn,2026-06-16T19:47:37.566018Z
+760414,2026-06-12,Group A,South Korea,Czechia,2,1,15,7,Full Time,espn,2026-06-16T19:47:37.566018Z
+760416,2026-06-12,Group B,Canada,Bosnia-Herzegovina,1,1,13,8,Full Time,espn,2026-06-16T19:47:37.618983Z
+760417,2026-06-13,Group D,United States,Paraguay,4,1,16,9,Full Time,espn,2026-06-16T19:47:37.618983Z
+760419,2026-06-13,Group C,Brazil,Morocco,1,1,12,14,Full Time,espn,2026-06-16T19:47:37.784973Z
+760420,2026-06-13,Group B,Qatar,Switzerland,1,1,6,26,Full Time,espn,2026-06-16T19:47:37.784973Z
+760418,2026-06-14,Group C,Haiti,Scotland,0,1,15,9,Full Time,espn,2026-06-16T19:47:37.784973Z
+760421,2026-06-14,Group D,Australia,Türkiye,2,0,9,30,Full Time,espn,2026-06-16T19:47:37.840224Z
+760422,2026-06-14,Group E,Germany,Curaçao,7,1,26,8,Full Time,espn,2026-06-16T19:47:37.840224Z
+760423,2026-06-14,Group E,Ivory Coast,Ecuador,1,0,15,12,Full Time,espn,2026-06-16T19:47:37.840224Z
+760425,2026-06-14,Group F,Netherlands,Japan,2,2,10,10,Full Time,espn,2026-06-16T19:47:37.840224Z
+760424,2026-06-15,Group F,Sweden,Tunisia,5,1,13,6,Full Time,espn,2026-06-16T19:47:37.840224Z
+760426,2026-06-15,Group G,Belgium,Egypt,1,1,15,14,Full Time,espn,2026-06-16T19:47:37.886494Z
+760428,2026-06-15,Group H,Spain,Cape Verde,0,0,27,6,Full Time,espn,2026-06-16T19:47:37.886494Z
+760429,2026-06-15,Group H,Saudi Arabia,Uruguay,1,1,7,27,Full Time,espn,2026-06-16T19:47:37.886494Z
+760427,2026-06-16,Group G,Iran,New Zealand,2,2,17,14,Full Time,espn,2026-06-16T19:47:37.886494Z

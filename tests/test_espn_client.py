@@ -25,6 +25,7 @@ def test_normalize_completed_events_keeps_completed_matches_only() -> None:
                 },
                 "competitions": [
                     {
+                        "altGameNote": "FIFA World Cup, Group A",
                         "status": {
                             "type": {
                                 "completed": True,
@@ -38,11 +39,13 @@ def test_normalize_completed_events_keeps_completed_matches_only() -> None:
                                 "homeAway": "home",
                                 "score": "3",
                                 "team": {"displayName": "Brazil"},
+                                "statistics": [{"name": "totalShots", "displayValue": "14"}],
                             },
                             {
                                 "homeAway": "away",
                                 "score": "1",
                                 "team": {"displayName": "Mexico"},
+                                "statistics": [{"name": "totalShots", "displayValue": "7"}],
                             },
                         ],
                     }
@@ -93,11 +96,13 @@ def test_normalize_completed_events_keeps_completed_matches_only() -> None:
         {
             "match_id": "401",
             "match_date": "2026-06-11",
-            "stage": "GROUP",
+            "stage": "Group A",
             "home_team": "Brazil",
             "away_team": "Mexico",
             "home_goals": 3,
             "away_goals": 1,
+            "home_shots": 14,
+            "away_shots": 7,
             "status": "Final",
             "source": "espn",
             "source_retrieved_at": "2026-06-16T12:00:00Z",
@@ -130,11 +135,13 @@ def test_fetch_completed_matches_for_date_passes_ssl_verification_flag() -> None
                                         "homeAway": "home",
                                         "score": "2",
                                         "team": {"displayName": "Spain"},
+                                        "statistics": [{"name": "totalShots", "displayValue": "11"}],
                                     },
                                     {
                                         "homeAway": "away",
                                         "score": "0",
                                         "team": {"displayName": "Japan"},
+                                        "statistics": [{"name": "totalShots", "displayValue": "5"}],
                                     },
                                 ],
                             }
@@ -168,4 +175,3 @@ def test_fetch_completed_matches_for_date_passes_ssl_verification_flag() -> None
             "verify": False,
         }
     ]
-

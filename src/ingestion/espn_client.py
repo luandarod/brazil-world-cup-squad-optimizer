@@ -63,6 +63,8 @@ def _normalize_completed_event(event: dict[str, Any], retrieved_at: str) -> dict
         "away_team": away_team["team"],
         "home_goals": home_team["score"],
         "away_goals": away_team["score"],
+        "home_shots": home_team["shots"],
+        "away_shots": away_team["shots"],
         "status": _read_status(event, competition),
         "source": "espn",
         "source_retrieved_at": retrieved_at,
@@ -100,11 +102,33 @@ def _find_competitor(competition: dict[str, Any], home_away: str) -> dict | None
         score = competitor.get("score")
         if score is None:
             return None
-        return {"team": str(team_name), "score": int(score)}
+        return {
+            "team": str(team_name),
+            "score": int(score),
+            "shots": _read_stat_value(competitor.get("statistics") or [], "totalShots"),
+        }
+    return None
+
+
+def _read_stat_value(statistics: list[dict[str, Any]], target_name: str) -> int | None:
+    for statistic in statistics:
+        if statistic.get("name") != target_name:
+            continue
+        value = statistic.get("displayValue")
+        if value is None:
+            return None
+        try:
+            return int(float(str(value)))
+        except ValueError:
+            return None
     return None
 
 
 def _read_stage(competition: dict[str, Any]) -> str:
+    alt_game_note = competition.get("altGameNote")
+    if isinstance(alt_game_note, str) and "," in alt_game_note:
+        return alt_game_note.split(",", 1)[1].strip()
+
     competition_type = competition.get("type") or {}
     if isinstance(competition_type, dict):
         stage = competition_type.get("abbreviation") or competition_type.get("shortDetail")
@@ -130,4 +154,3 @@ def _read_status(event: dict[str, Any], competition: dict[str, Any]) -> str:
             if value:
                 return str(value)
     return "Final"
-

@@ -64,6 +64,7 @@ Every modeling pass is judged against a baseline, not in isolation.
 
 - `data/serving/observed_match_results.csv` is the public truth table for completed matches only.
 - `data/serving/coverage_summary.csv` explains how much real observed coverage exists for each published target.
+- `src/pipelines/build_real_serving_snapshot.py` prefers FIFA when usable and falls back to the public ESPN scoreboard feed to keep the app populated with real observed matches.
 - The app does not invent truth for unplayed matches or unavailable metrics.
 - If a leaderboard, forecast comparison, or team view lacks real observed match truth, the app shows an explicit coverage message instead of a generic file-missing notice.
 
@@ -77,4 +78,10 @@ python -m venv .venv
 pip install -r requirements.txt
 pytest tests -v
 streamlit run app/streamlit_app.py
+```
+
+To refresh the public snapshot with currently completed World Cup 2026 matches:
+
+```bash
+python -m src.pipelines.build_real_serving_snapshot --start-date 2026-06-11 --end-date 2026-06-15 --disable-ssl-verification
 ```

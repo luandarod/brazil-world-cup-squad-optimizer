@@ -19,6 +19,8 @@ OBSERVED_RESULT_COLUMNS = [
     "away_team",
     "home_goals",
     "away_goals",
+    "home_shots",
+    "away_shots",
     "status",
     "source",
     "source_retrieved_at",
@@ -39,6 +41,7 @@ TEAM_SUMMARY_COLUMNS = [
     "losses",
     "goals_for",
     "goals_against",
+    "shots_for",
     "goal_difference",
     "points",
 ]
@@ -127,6 +130,8 @@ def _fetch_fifa_matches(start_date: str, end_date: str) -> list[dict]:
                 "away_team": raw_match["away_team"]["name"],
                 "home_goals": raw_match["home_team"]["goals"],
                 "away_goals": raw_match["away_team"]["goals"],
+                "home_shots": raw_match["home_team"].get("shots"),
+                "away_shots": raw_match["away_team"].get("shots"),
                 "status": "Final",
                 "source": raw_match.get("source", "fifa"),
                 "source_retrieved_at": raw_match.get("retrieved_at"),
@@ -142,11 +147,19 @@ def _parse_date(value: str) -> date:
 
 def _build_coverage_summary(observed_results: pd.DataFrame) -> pd.DataFrame:
     total_matches = len(observed_results.index)
+    shots_covered = 0
+    if not observed_results.empty and {"home_shots", "away_shots"}.issubset(observed_results.columns):
+        shots_covered = int(
+            (
+                observed_results["home_shots"].notna()
+                & observed_results["away_shots"].notna()
+            ).sum()
+        )
     rows = []
     for metric_name, covered_matches in (
         ("goals", total_matches),
         ("cards", 0),
-        ("shots", 0),
+        ("shots", shots_covered),
     ):
         coverage_pct = 0.0 if total_matches == 0 else (covered_matches / total_matches) * 100.0
         rows.append(
@@ -169,6 +182,7 @@ def _build_team_summary(observed_results: pd.DataFrame) -> pd.DataFrame:
                 "team": match["home_team"],
                 "goals_for": match["home_goals"],
                 "goals_against": match["away_goals"],
+                "shots_for": match.get("home_shots") or 0,
                 "wins": 1 if match["home_goals"] > match["away_goals"] else 0,
                 "draws": 1 if match["home_goals"] == match["away_goals"] else 0,
                 "losses": 1 if match["home_goals"] < match["away_goals"] else 0,
@@ -180,6 +194,7 @@ def _build_team_summary(observed_results: pd.DataFrame) -> pd.DataFrame:
                 "team": match["away_team"],
                 "goals_for": match["away_goals"],
                 "goals_against": match["home_goals"],
+                "shots_for": match.get("away_shots") or 0,
                 "wins": 1 if match["away_goals"] > match["home_goals"] else 0,
                 "draws": 1 if match["away_goals"] == match["home_goals"] else 0,
                 "losses": 1 if match["away_goals"] < match["home_goals"] else 0,
