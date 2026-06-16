@@ -8,7 +8,12 @@ def _write_csv(path: Path, frame: pd.DataFrame) -> None:
 
 
 def write_serving_outputs(
-    base_dir: Path, leaderboard: pd.DataFrame, predictions: pd.DataFrame, teams: pd.DataFrame
+    base_dir: Path,
+    leaderboard: pd.DataFrame,
+    predictions: pd.DataFrame,
+    teams: pd.DataFrame,
+    coverage_summary: pd.DataFrame,
+    observed_match_results: pd.DataFrame,
 ) -> None:
     output_dir = Path(base_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -16,6 +21,8 @@ def write_serving_outputs(
     _write_csv(output_dir / "model_leaderboard.csv", leaderboard)
     _write_csv(output_dir / "match_predictions.csv", predictions)
     _write_csv(output_dir / "team_summary.csv", teams)
+    _write_csv(output_dir / "coverage_summary.csv", coverage_summary)
+    _write_csv(output_dir / "observed_match_results.csv", observed_match_results)
 
 
 def _read_csv_or_empty(path: Path) -> pd.DataFrame:
@@ -34,3 +41,11 @@ def read_match_predictions(base_dir: Path) -> pd.DataFrame:
 
 def read_team_summary(base_dir: Path) -> pd.DataFrame:
     return _read_csv_or_empty(Path(base_dir) / "team_summary.csv")
+
+
+def read_coverage_summary(base_dir: Path) -> pd.DataFrame:
+    return _read_csv_or_empty(Path(base_dir) / "coverage_summary.csv")
+
+
+def read_observed_match_results(base_dir: Path) -> pd.DataFrame:
+    return _read_csv_or_empty(Path(base_dir) / "observed_match_results.csv")
