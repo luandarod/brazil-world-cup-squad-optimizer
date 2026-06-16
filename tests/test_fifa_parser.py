@@ -5,6 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.ingestion.fifa_client import _normalize_match
 from src.ingestion.fifa_parser import parse_team_match_rows
 from src.pipelines.build_truth_dataset import build_truth_dataset
 
@@ -119,3 +120,50 @@ def test_build_truth_dataset_returns_empty_dataframe_with_coverage_columns() -> 
     assert dataset.empty
     assert_frame = pd.DataFrame(columns=dataset.columns)
     pd.testing.assert_frame_equal(dataset, assert_frame)
+
+
+def test_normalize_match_skips_unplayed_matches() -> None:
+    candidate = {
+        "id": "match-upcoming",
+        "date": "2026-06-20T18:00:00Z",
+        "stage": "group",
+        "status": "scheduled",
+        "homeTeam": {"name": "Brazil", "score": None},
+        "awayTeam": {"name": "Mexico", "score": None},
+    }
+
+    assert _normalize_match(candidate, retrieved_at="2026-06-16T22:00:00Z") is None
+
+
+def test_normalize_match_sets_metric_sources_only_when_fifa_payload_has_them() -> None:
+    candidate = {
+        "id": "match-finished",
+        "date": "2026-06-20T18:00:00Z",
+        "stage": "group",
+        "status": "completed",
+        "homeTeam": {
+            "name": "Brazil",
+            "score": 2,
+            "yellowCards": 1,
+            "shotsTotal": 8,
+        },
+        "awayTeam": {
+            "name": "Mexico",
+            "score": 1,
+            "yellowCards": 3,
+            "shotsTotal": 5,
+        },
+    }
+
+    assert _normalize_match(candidate, retrieved_at="2026-06-16T22:00:00Z") == {
+        "id": "match-finished",
+        "date": "2026-06-20",
+        "stage": "group",
+        "source": "fifa",
+        "score_source": "fifa",
+        "discipline_source": "fifa",
+        "shooting_source": "fifa",
+        "retrieved_at": "2026-06-16T22:00:00Z",
+        "home_team": {"name": "Brazil", "goals": 2, "cards": 1, "shots": 8},
+        "away_team": {"name": "Mexico", "goals": 1, "cards": 3, "shots": 5},
+    }

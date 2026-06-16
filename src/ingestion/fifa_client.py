@@ -100,6 +100,9 @@ def _walk_dicts(payload: Any) -> list[dict[str, Any]]:
 
 
 def _normalize_match(candidate: dict[str, Any], retrieved_at: str) -> dict | None:
+    if not _is_completed_match(candidate):
+        return None
+
     home_team = _normalize_team(candidate.get("homeTeam") or candidate.get("home_team"))
     away_team = _normalize_team(candidate.get("awayTeam") or candidate.get("away_team"))
     if home_team is None or away_team is None:
@@ -115,18 +118,84 @@ def _normalize_match(candidate: dict[str, Any], retrieved_at: str) -> dict | Non
     if not match_id or not match_date:
         return None
 
+    discipline_source = "fifa" if _has_metric(home_team, away_team, "cards") else None
+    shooting_source = "fifa" if _has_metric(home_team, away_team, "shots") else None
+
     return {
         "id": str(match_id),
         "date": str(match_date)[:10],
         "stage": candidate.get("stage") or candidate.get("competitionPhase") or "unknown",
         "source": "fifa",
         "score_source": "fifa",
-        "discipline_source": None,
-        "shooting_source": None,
+        "discipline_source": discipline_source,
+        "shooting_source": shooting_source,
         "retrieved_at": retrieved_at,
         "home_team": home_team,
         "away_team": away_team,
     }
+
+
+def _is_completed_match(candidate: dict[str, Any]) -> bool:
+    for value in _status_values(candidate):
+        normalized = str(value).strip().lower()
+        if normalized in {
+            "completed",
+            "finished",
+            "full-time",
+            "full_time",
+            "after extra time",
+            "after-extra-time",
+            "aft",
+            "ft",
+            "played",
+            "closed",
+        }:
+            return True
+        if normalized in {
+            "scheduled",
+            "notstarted",
+            "not_started",
+            "upcoming",
+            "live",
+            "inprogress",
+            "in_progress",
+            "postponed",
+            "cancelled",
+            "canceled",
+        }:
+            return False
+
+    return _has_metric(
+        _normalize_team(candidate.get("homeTeam") or candidate.get("home_team")),
+        _normalize_team(candidate.get("awayTeam") or candidate.get("away_team")),
+        "goals",
+    )
+
+
+def _status_values(candidate: dict[str, Any]) -> list[Any]:
+    values = [
+        candidate.get("status"),
+        candidate.get("matchStatus"),
+        candidate.get("state"),
+    ]
+    if isinstance(candidate.get("status"), dict):
+        status = candidate["status"]
+        values.extend(
+            [
+                status.get("type"),
+                status.get("description"),
+                status.get("name"),
+                status.get("code"),
+            ]
+        )
+    return [value for value in values if value is not None]
+
+
+def _has_metric(home_team: dict | None, away_team: dict | None, key: str) -> bool:
+    for team in (home_team, away_team):
+        if team is not None and team.get(key) is not None:
+            return True
+    return False
 
 
 def _normalize_team(team_payload: Any) -> dict | None:
