@@ -18,13 +18,19 @@ def write_serving_outputs(
     _write_csv(output_dir / "team_summary.csv", teams)
 
 
+def _read_csv_or_empty(path: Path) -> pd.DataFrame:
+    if not Path(path).exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
 def read_model_leaderboard(base_dir: Path) -> pd.DataFrame:
-    return pd.read_csv(Path(base_dir) / "model_leaderboard.csv")
+    return _read_csv_or_empty(Path(base_dir) / "model_leaderboard.csv")
 
 
 def read_match_predictions(base_dir: Path) -> pd.DataFrame:
-    return pd.read_csv(Path(base_dir) / "match_predictions.csv")
+    return _read_csv_or_empty(Path(base_dir) / "match_predictions.csv")
 
 
 def read_team_summary(base_dir: Path) -> pd.DataFrame:
-    return pd.read_csv(Path(base_dir) / "team_summary.csv")
+    return _read_csv_or_empty(Path(base_dir) / "team_summary.csv")
