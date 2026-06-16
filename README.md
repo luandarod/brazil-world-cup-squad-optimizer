@@ -2,6 +2,8 @@
 
 World Cup Forecasting Lab is a football analytics sandbox for estimating match-level World Cup outcomes, comparing modeling strategies, and packaging the results for interactive exploration.
 
+The public Streamlit app is intentionally real-data-only. It only exposes outputs backed by observed match truth and explicit coverage artifacts, so missing validation is shown as missing coverage rather than hidden behind placeholder numbers.
+
 The current repo focuses on a transparent forecasting stack:
 
 - a FIFA official truth layer for final match results and tournament records;
@@ -57,6 +59,13 @@ Every modeling pass is judged against a baseline, not in isolation.
 - FIFA data acts as the official source of truth for outcomes.
 - Market prices provide the market baseline the models must beat or at least explain.
 - Goals, cards, and shots are evaluated as separate targets so the lab can measure calibration and error per event family.
+
+## Public app contract
+
+- `data/serving/observed_match_results.csv` is the public truth table for completed matches only.
+- `data/serving/coverage_summary.csv` explains how much real observed coverage exists for each published target.
+- The app does not invent truth for unplayed matches or unavailable metrics.
+- If a leaderboard, forecast comparison, or team view lacks real observed match truth, the app shows an explicit coverage message instead of a generic file-missing notice.
 
 See `reports/methodology/world-cup-forecasting-lab.md` for the concise methodology note behind this structure.
 

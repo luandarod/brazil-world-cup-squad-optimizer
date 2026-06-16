@@ -6,6 +6,12 @@ def test_streamlit_app_exposes_forecasting_tabs() -> None:
         Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py"
     ).read_text(encoding="utf-8")
 
+    assert "read_coverage_summary" in app_source
+    assert "read_observed_match_results" in app_source
+    assert "Coverage Summary" in app_source
     assert "Model Leaderboard" in app_source
     assert "Match Explorer" in app_source
+    assert "Observed Matches" in app_source
+    assert "real observed match truth" in app_source
+    assert "real-data-only" in app_source
     assert "Methodology" in app_source

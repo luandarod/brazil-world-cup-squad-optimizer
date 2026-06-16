@@ -9,6 +9,16 @@ The lab uses a simple layered evaluation setup:
 - Event models for goals, cards, and shots are trained and reviewed separately, which keeps target definitions clear and makes error analysis easier to interpret.
 - Backtests in `src/evaluation/` produce comparable metrics and leaderboard artifacts before anything is surfaced in the app.
 
+## Real-data public contract
+
+The public app is intentionally scoped to observed reality, not simulated completeness.
+
+- `observed_match_results.csv` contains only completed matches with real observed truth.
+- `coverage_summary.csv` documents which targets have enough observed truth to support public evaluation.
+- FIFA remains the primary truth source for match identity and final scores.
+- When non-score metrics are unavailable or only partially observed, the app keeps those gaps visible instead of manufacturing values or implying full coverage.
+- Public-facing tabs may stay sparse until enough observed matches exist to support fair comparisons.
+
 ## Project structure
 
 The repository is organized around the forecasting pipeline:
