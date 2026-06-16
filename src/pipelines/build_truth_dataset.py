@@ -14,10 +14,18 @@ TRUTH_DATASET_COLUMNS = [
     "team",
     "opponent",
     "is_home_team",
+    "is_observed_match",
     "goals_for",
     "cards_for",
     "shots_for",
+    "has_goals_truth",
+    "has_cards_truth",
+    "has_shots_truth",
     "source",
+    "score_source",
+    "discipline_source",
+    "shooting_source",
+    "source_retrieved_at",
 ]
 
 

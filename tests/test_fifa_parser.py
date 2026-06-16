@@ -9,51 +9,50 @@ from src.ingestion.fifa_parser import parse_team_match_rows
 from src.pipelines.build_truth_dataset import build_truth_dataset
 
 
-def test_parse_team_match_rows_returns_two_team_rows_per_match() -> None:
+def test_parse_team_match_rows_marks_partial_metric_coverage() -> None:
     raw_match = {
-        "id": "match-001",
-        "date": "2026-06-15",
+        "id": "match-003",
+        "date": "2026-06-17",
         "stage": "group",
+        "source": "fifa",
+        "score_source": "fifa",
+        "discipline_source": None,
+        "shooting_source": None,
+        "retrieved_at": "2026-06-16T22:00:00Z",
         "home_team": {
             "name": "Brazil",
-            "goals": 2,
-            "cards": 1,
-            "shots": 8,
+            "goals": 3,
+            "cards": None,
+            "shots": None,
         },
         "away_team": {
-            "name": "Serbia",
+            "name": "Mexico",
             "goals": 1,
-            "cards": 3,
-            "shots": 5,
+            "cards": None,
+            "shots": None,
         },
     }
 
-    assert parse_team_match_rows(raw_match) == [
-        {
-            "match_id": "match-001",
-            "match_date": "2026-06-15",
-            "stage": "group",
-            "team": "Brazil",
-            "opponent": "Serbia",
-            "is_home_team": True,
-            "goals_for": 2,
-            "cards_for": 1,
-            "shots_for": 8,
-            "source": "fifa",
-        },
-        {
-            "match_id": "match-001",
-            "match_date": "2026-06-15",
-            "stage": "group",
-            "team": "Serbia",
-            "opponent": "Brazil",
-            "is_home_team": False,
-            "goals_for": 1,
-            "cards_for": 3,
-            "shots_for": 5,
-            "source": "fifa",
-        },
-    ]
+    assert parse_team_match_rows(raw_match)[0] == {
+        "match_id": "match-003",
+        "match_date": "2026-06-17",
+        "stage": "group",
+        "team": "Brazil",
+        "opponent": "Mexico",
+        "is_home_team": True,
+        "is_observed_match": True,
+        "goals_for": 3,
+        "cards_for": None,
+        "shots_for": None,
+        "has_goals_truth": True,
+        "has_cards_truth": False,
+        "has_shots_truth": False,
+        "source": "fifa",
+        "score_source": "fifa",
+        "discipline_source": None,
+        "shooting_source": None,
+        "source_retrieved_at": "2026-06-16T22:00:00Z",
+    }
 
 
 def test_build_truth_dataset_returns_sorted_rows() -> None:
@@ -62,6 +61,11 @@ def test_build_truth_dataset_returns_sorted_rows() -> None:
             "id": "match-002",
             "date": "2026-06-16",
             "stage": "group",
+            "source": "fifa",
+            "score_source": "fifa",
+            "discipline_source": "fifa",
+            "shooting_source": None,
+            "retrieved_at": "2026-06-16T20:00:00Z",
             "home_team": {"name": "Japan", "goals": 1, "cards": 2, "shots": 4},
             "away_team": {"name": "Brazil", "goals": 2, "cards": 1, "shots": 9},
         },
@@ -69,6 +73,11 @@ def test_build_truth_dataset_returns_sorted_rows() -> None:
             "id": "match-001",
             "date": "2026-06-15",
             "stage": "group",
+            "source": "fifa",
+            "score_source": "fifa",
+            "discipline_source": None,
+            "shooting_source": None,
+            "retrieved_at": "2026-06-16T19:00:00Z",
             "home_team": {"name": "Serbia", "goals": 0, "cards": 3, "shots": 5},
             "away_team": {"name": "Argentina", "goals": 1, "cards": 2, "shots": 7},
         },
@@ -84,7 +93,7 @@ def test_build_truth_dataset_returns_sorted_rows() -> None:
     ]
 
 
-def test_build_truth_dataset_returns_empty_dataframe_with_stable_columns() -> None:
+def test_build_truth_dataset_returns_empty_dataframe_with_coverage_columns() -> None:
     dataset = build_truth_dataset([])
 
     assert list(dataset.columns) == [
@@ -94,10 +103,18 @@ def test_build_truth_dataset_returns_empty_dataframe_with_stable_columns() -> No
         "team",
         "opponent",
         "is_home_team",
+        "is_observed_match",
         "goals_for",
         "cards_for",
         "shots_for",
+        "has_goals_truth",
+        "has_cards_truth",
+        "has_shots_truth",
         "source",
+        "score_source",
+        "discipline_source",
+        "shooting_source",
+        "source_retrieved_at",
     ]
     assert dataset.empty
     assert_frame = pd.DataFrame(columns=dataset.columns)

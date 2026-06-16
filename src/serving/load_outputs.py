@@ -12,8 +12,8 @@ def write_serving_outputs(
     leaderboard: pd.DataFrame,
     predictions: pd.DataFrame,
     teams: pd.DataFrame,
-    coverage_summary: pd.DataFrame,
-    observed_match_results: pd.DataFrame,
+    coverage_summary: pd.DataFrame | None = None,
+    observed_match_results: pd.DataFrame | None = None,
 ) -> None:
     output_dir = Path(base_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -21,8 +21,10 @@ def write_serving_outputs(
     _write_csv(output_dir / "model_leaderboard.csv", leaderboard)
     _write_csv(output_dir / "match_predictions.csv", predictions)
     _write_csv(output_dir / "team_summary.csv", teams)
-    _write_csv(output_dir / "coverage_summary.csv", coverage_summary)
-    _write_csv(output_dir / "observed_match_results.csv", observed_match_results)
+    if coverage_summary is not None:
+        _write_csv(output_dir / "coverage_summary.csv", coverage_summary)
+    if observed_match_results is not None:
+        _write_csv(output_dir / "observed_match_results.csv", observed_match_results)
 
 
 def _read_csv_or_empty(path: Path) -> pd.DataFrame:
