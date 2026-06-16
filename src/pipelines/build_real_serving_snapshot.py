@@ -8,6 +8,7 @@ from typing import Iterable
 import pandas as pd
 
 from src.ingestion.espn_client import ESPNClient
+from src.ingestion.fifa_client import FIFAClient
 from src.serving.load_outputs import write_serving_outputs
 
 OBSERVED_RESULT_COLUMNS = [
@@ -50,8 +51,12 @@ def build_real_serving_snapshot(
     client: ESPNClient | None = None,
     disable_ssl_verification: bool = False,
 ) -> None:
-    fetch_client = client or ESPNClient(verify_ssl=not disable_ssl_verification)
-    normalized_matches = _fetch_completed_matches(fetch_client, start_date, end_date)
+    normalized_matches = _load_normalized_matches(
+        start_date=start_date,
+        end_date=end_date,
+        client=client,
+        disable_ssl_verification=disable_ssl_verification,
+    )
 
     observed_results = pd.DataFrame(normalized_matches, columns=OBSERVED_RESULT_COLUMNS)
     coverage = _build_coverage_summary(observed_results)
@@ -65,6 +70,23 @@ def build_real_serving_snapshot(
         coverage_summary=coverage,
         observed_match_results=observed_results,
     )
+
+
+def _load_normalized_matches(
+    start_date: str,
+    end_date: str,
+    client: ESPNClient | None,
+    disable_ssl_verification: bool,
+) -> list[dict]:
+    if client is not None:
+        return _fetch_completed_matches(client, start_date, end_date)
+
+    fifa_matches = _fetch_fifa_matches(start_date, end_date)
+    if fifa_matches:
+        return fifa_matches
+
+    espn_client = ESPNClient(verify_ssl=not disable_ssl_verification)
+    return _fetch_completed_matches(espn_client, start_date, end_date)
 
 
 def _fetch_completed_matches(client: ESPNClient, start_date: str, end_date: str) -> list[dict]:
@@ -81,6 +103,37 @@ def _iter_dates(start_date: str, end_date: str) -> Iterable[date]:
     while current <= finish:
         yield current
         current += timedelta(days=1)
+
+
+def _fetch_fifa_matches(start_date: str, end_date: str) -> list[dict]:
+    try:
+        raw_matches = FIFAClient().fetch_world_cup_matches()
+    except Exception:
+        return []
+
+    start = _parse_date(start_date)
+    finish = _parse_date(end_date)
+    rows: list[dict] = []
+    for raw_match in raw_matches:
+        match_day = _parse_date(str(raw_match.get("date", ""))[:10])
+        if match_day < start or match_day > finish:
+            continue
+        rows.append(
+            {
+                "match_id": raw_match["id"],
+                "match_date": raw_match["date"],
+                "stage": raw_match["stage"],
+                "home_team": raw_match["home_team"]["name"],
+                "away_team": raw_match["away_team"]["name"],
+                "home_goals": raw_match["home_team"]["goals"],
+                "away_goals": raw_match["away_team"]["goals"],
+                "status": "Final",
+                "source": raw_match.get("source", "fifa"),
+                "source_retrieved_at": raw_match.get("retrieved_at"),
+            }
+        )
+    rows.sort(key=lambda row: (row["match_date"], row["match_id"]))
+    return rows
 
 
 def _parse_date(value: str) -> date:
