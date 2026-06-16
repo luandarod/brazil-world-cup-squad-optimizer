@@ -15,6 +15,8 @@ def _build_team_row(
     is_home_team: bool,
 ) -> dict:
     team = raw_match[team_key]
+    has_cards_truth = team.get("cards") is not None
+    has_shots_truth = team.get("shots") is not None
     return {
         "match_id": raw_match["id"],
         "match_date": raw_match["date"],
@@ -27,11 +29,11 @@ def _build_team_row(
         "cards_for": team.get("cards"),
         "shots_for": team.get("shots"),
         "has_goals_truth": team.get("goals") is not None,
-        "has_cards_truth": team.get("cards") is not None,
-        "has_shots_truth": team.get("shots") is not None,
+        "has_cards_truth": has_cards_truth,
+        "has_shots_truth": has_shots_truth,
         "source": raw_match.get("source", "fifa"),
         "score_source": raw_match.get("score_source"),
-        "discipline_source": raw_match.get("discipline_source"),
-        "shooting_source": raw_match.get("shooting_source"),
+        "discipline_source": raw_match.get("discipline_source") if has_cards_truth else None,
+        "shooting_source": raw_match.get("shooting_source") if has_shots_truth else None,
         "source_retrieved_at": raw_match.get("retrieved_at"),
     }

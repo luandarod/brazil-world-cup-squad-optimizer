@@ -167,3 +167,47 @@ def test_normalize_match_sets_metric_sources_only_when_fifa_payload_has_them() -
         "home_team": {"name": "Brazil", "goals": 2, "cards": 1, "shots": 8},
         "away_team": {"name": "Mexico", "goals": 1, "cards": 3, "shots": 5},
     }
+
+
+def test_normalize_match_skips_no_status_zero_zero_placeholder_fixture() -> None:
+    candidate = {
+        "id": "match-placeholder",
+        "date": "2026-06-21T18:00:00Z",
+        "stage": "group",
+        "homeTeam": {"name": "Brazil", "score": 0},
+        "awayTeam": {"name": "Mexico", "score": "0"},
+    }
+
+    assert _normalize_match(candidate, retrieved_at="2026-06-16T22:00:00Z") is None
+
+
+def test_parse_team_match_rows_sets_metric_sources_per_team_row() -> None:
+    raw_match = {
+        "id": "match-004",
+        "date": "2026-06-18",
+        "stage": "group",
+        "source": "fifa",
+        "score_source": "fifa",
+        "discipline_source": "fifa",
+        "shooting_source": "fifa",
+        "retrieved_at": "2026-06-16T22:30:00Z",
+        "home_team": {
+            "name": "Brazil",
+            "goals": 2,
+            "cards": 1,
+            "shots": 6,
+        },
+        "away_team": {
+            "name": "Mexico",
+            "goals": 1,
+            "cards": None,
+            "shots": None,
+        },
+    }
+
+    rows = parse_team_match_rows(raw_match)
+
+    assert rows[0]["discipline_source"] == "fifa"
+    assert rows[0]["shooting_source"] == "fifa"
+    assert rows[1]["discipline_source"] is None
+    assert rows[1]["shooting_source"] is None

@@ -165,11 +165,9 @@ def _is_completed_match(candidate: dict[str, Any]) -> bool:
         }:
             return False
 
-    return _has_metric(
-        _normalize_team(candidate.get("homeTeam") or candidate.get("home_team")),
-        _normalize_team(candidate.get("awayTeam") or candidate.get("away_team")),
-        "goals",
-    )
+    home_team = _normalize_team(candidate.get("homeTeam") or candidate.get("home_team"))
+    away_team = _normalize_team(candidate.get("awayTeam") or candidate.get("away_team"))
+    return _has_non_placeholder_score(home_team, away_team)
 
 
 def _status_values(candidate: dict[str, Any]) -> list[Any]:
@@ -196,6 +194,18 @@ def _has_metric(home_team: dict | None, away_team: dict | None, key: str) -> boo
         if team is not None and team.get(key) is not None:
             return True
     return False
+
+
+def _has_non_placeholder_score(home_team: dict | None, away_team: dict | None) -> bool:
+    if home_team is None or away_team is None:
+        return False
+
+    home_goals = home_team.get("goals")
+    away_goals = away_team.get("goals")
+    if home_goals is None or away_goals is None:
+        return False
+
+    return bool(home_goals != 0 or away_goals != 0)
 
 
 def _normalize_team(team_payload: Any) -> dict | None:
