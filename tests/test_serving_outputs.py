@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-import uuid
+import tempfile
 
 import pandas as pd
 
@@ -14,12 +14,8 @@ from src.serving.load_outputs import (
     read_team_summary,
     write_serving_outputs,
 )
-
-
 def _make_temp_dir() -> Path:
-    temp_dir = Path(__file__).resolve().parents[1] / ".pytest_tmp" / str(uuid.uuid4())
-    temp_dir.mkdir(parents=True, exist_ok=False)
-    return temp_dir
+    return Path(tempfile.mkdtemp(prefix="serving-outputs-"))
 
 
 def test_write_serving_outputs_creates_model_leaderboard_csv() -> None:
@@ -139,6 +135,29 @@ def test_write_serving_outputs_writes_new_artifacts_when_provided() -> None:
     assert (serving_dir / "observed_match_results.csv").exists()
     pd.testing.assert_frame_equal(read_coverage_summary(serving_dir), coverage)
     pd.testing.assert_frame_equal(read_observed_match_results(serving_dir), observed_results)
+
+
+def test_old_writer_call_clears_stale_optional_artifacts_in_reused_directory() -> None:
+    serving_dir = _make_temp_dir() / "serving"
+    leaderboard = pd.DataFrame([{"model_name": "elo", "target_name": "winner", "mae": 0.19}])
+    predictions = pd.DataFrame([{"match_id": "bra-vs-ger", "predicted_winner": "Brazil"}])
+    teams = pd.DataFrame([{"team": "Germany", "squad_strength": 86.5}])
+    coverage = pd.DataFrame([{"target_name": "winner", "coverage": 0.91}])
+    observed_results = pd.DataFrame([{"match_id": "bra-vs-ger", "winner": "Brazil"}])
+
+    write_serving_outputs(
+        serving_dir,
+        leaderboard,
+        predictions,
+        teams,
+        coverage,
+        observed_results,
+    )
+
+    write_serving_outputs(serving_dir, leaderboard, predictions, teams)
+
+    pd.testing.assert_frame_equal(read_coverage_summary(serving_dir), pd.DataFrame())
+    pd.testing.assert_frame_equal(read_observed_match_results(serving_dir), pd.DataFrame())
 
 
 def test_new_serving_output_readers_return_empty_frames_when_files_are_missing() -> None:

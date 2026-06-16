@@ -7,6 +7,11 @@ def _write_csv(path: Path, frame: pd.DataFrame) -> None:
     frame.to_csv(path, index=False)
 
 
+def _remove_if_exists(path: Path) -> None:
+    if path.exists():
+        path.unlink()
+
+
 def write_serving_outputs(
     base_dir: Path,
     leaderboard: pd.DataFrame,
@@ -23,8 +28,12 @@ def write_serving_outputs(
     _write_csv(output_dir / "team_summary.csv", teams)
     if coverage_summary is not None:
         _write_csv(output_dir / "coverage_summary.csv", coverage_summary)
+    else:
+        _remove_if_exists(output_dir / "coverage_summary.csv")
     if observed_match_results is not None:
         _write_csv(output_dir / "observed_match_results.csv", observed_match_results)
+    else:
+        _remove_if_exists(output_dir / "observed_match_results.csv")
 
 
 def _read_csv_or_empty(path: Path) -> pd.DataFrame:
