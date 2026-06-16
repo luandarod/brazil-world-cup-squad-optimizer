@@ -42,6 +42,14 @@ def _render_dataframe(frame: pd.DataFrame, empty_message: str) -> None:
     st.dataframe(frame, use_container_width=True, hide_index=True)
 
 
+def _count_observed_matches(observed_results: pd.DataFrame) -> int:
+    if observed_results.empty:
+        return 0
+    if "match_id" in observed_results.columns:
+        return int(observed_results["match_id"].nunique())
+    return len(observed_results)
+
+
 def _render_home(
     leaderboard: pd.DataFrame,
     predictions: pd.DataFrame,
@@ -57,7 +65,7 @@ def _render_home(
     st.caption("real-data-only public layer with explicit source coverage")
 
     col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Observed Matches", len(observed_results))
+    col1.metric("Observed Matches", _count_observed_matches(observed_results))
     col2.metric("Coverage Metrics", len(coverage))
     col3.metric("Leaderboard Rows", len(leaderboard))
     col4.metric("Forecasted Matches", len(predictions))
