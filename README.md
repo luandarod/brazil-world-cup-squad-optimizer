@@ -132,15 +132,15 @@ The repo now includes deploy-ready Streamlit and container assets:
 
 - `.streamlit/config.toml` for headless public app defaults;
 - `Dockerfile` for containerized hosting;
-- `render.yaml` for a one-service Render deployment on a paid always-on instance.
+- `render.yaml` for a one-service Render deployment on the free instance type.
 
 For a stable public deployment on Render:
 
 1. Push the repo with the latest `data/serving/` artifacts committed.
 2. Create a new Render Blueprint or Web Service from this repository.
 3. Render will detect `render.yaml` and build the app from `Dockerfile`.
-4. The blueprint is configured for the `starter` instance type so the service stays awake and exposes a permanent `onrender.com` URL.
-5. If you only need a temporary test deployment, you can manually switch the service to `free`, but free Render web services spin down after 15 minutes of inactivity.
+4. The blueprint is configured for the `free` instance type, which gives you a public `onrender.com` URL at no cost.
+5. Free Render web services spin down after 15 minutes of inactivity and take roughly a minute to wake up on the next request.
 6. Set any local-only secrets, such as `API_FOOTBALL_KEY`, only in the platform environment settings if you want player-prior enrichment during future rebuilds.
 7. After deploy, validate:
    - `/` loads the Streamlit app

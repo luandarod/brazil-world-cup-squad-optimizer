@@ -12,5 +12,5 @@ def test_deploy_assets_exist_for_stable_public_hosting() -> None:
     assert "enableCORS = false" in streamlit_config
     assert "enableXsrfProtection = false" in streamlit_config
     assert "runtime: docker" in render_blueprint
-    assert "plan: starter" in render_blueprint
+    assert "plan: free" in render_blueprint
     assert "healthCheckPath: /" in render_blueprint
