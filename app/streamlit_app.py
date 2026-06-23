@@ -597,11 +597,35 @@ def _format_pct(value: object, decimals: int = 0) -> str:
 
 
 def _html(markup: str) -> None:
-    st.markdown(dedent(markup).strip(), unsafe_allow_html=True)
+    st.html(dedent(markup).strip())
 
 
 def _empty(message: str) -> None:
     st.info(message)
+
+
+def _coverage_copy(row: dict[str, object], publish_status: str) -> tuple[str, str]:
+    metric_name = str(row.get("metric_name", ""))
+    covered_matches = int(float(row.get("covered_matches", 0) or 0))
+    total_matches = int(float(row.get("total_matches", 0) or 0))
+    coverage_pct = _format_pct(row.get("coverage_pct"), 0)
+
+    if bool(row.get("has_truth")):
+        return (
+            f"{coverage_pct} de cobertura observada em {covered_matches}/{total_matches} partidas",
+            "Leitura já comparável com a verdade do torneio.",
+        )
+
+    if publish_status == "forecast-only" and metric_name == "cards":
+        return (
+            "Forecast de cartões disponível para todos os jogos projetados.",
+            "Ainda sem verdade observada confiável na fonte pública para validação jogo a jogo.",
+        )
+
+    return (
+        f"Cobertura observada insuficiente em {covered_matches}/{total_matches} partidas",
+        _publish_status_label(publish_status),
+    )
 
 
 def _winner_from_scores(home_team: object, away_team: object, home_score: object, away_score: object) -> str:
@@ -622,14 +646,16 @@ def _coverage_cards(coverage: pd.DataFrame, methodology_status: pd.DataFrame) ->
         status_lookup = methodology_status.set_index("metric_name")["publish_status"].to_dict()
     columns = st.columns(len(coverage.index))
     for column, row in zip(columns, coverage.to_dict("records")):
+        publish_status = str(status_lookup.get(str(row.get("metric_name")), "coverage-only"))
+        coverage_line, status_line = _coverage_copy(row, publish_status)
         css_class = "chip-card is-soft" if bool(row.get("has_truth")) else "chip-card is-warning"
         with column:
             _html(
                 f"""
                 <div class="{css_class}">
                   <div class="chip-title">{escape(_model_label(row.get("metric_name")))}</div>
-                  <div class="chip-copy">{escape(_format_pct(row.get("coverage_pct"), 0))} de cobertura em {int(float(row.get("covered_matches", 0)))}/{int(float(row.get("total_matches", 0)))} partidas</div>
-                  <div class="chip-copy">{escape(_publish_status_label(status_lookup.get(str(row.get("metric_name")), "coverage-only")))}</div>
+                  <div class="chip-copy">{escape(coverage_line)}</div>
+                  <div class="chip-copy">{escape(status_line)}</div>
                 </div>
                 """
             )
