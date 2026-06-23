@@ -1,0 +1,33 @@
+match_id,match_date,stage,home_team,away_team,model_name,predicted_home_goals,predicted_away_goals,predicted_home_shots,predicted_away_shots,predicted_home_cards,predicted_away_cards,predicted_home_fouls,predicted_away_fouls,predicted_winner
+760486,2026-06-28,Round Of 32,South Korea,Switzerland,hybrid-prior,1.2,1.6,10.3,14.0,0.8,0.6,7.3,7.6,Switzerland
+760487,2026-06-29,Round Of 32,Brazil,Sweden,hybrid-prior,1.8,1.9,11.4,12.5,0.6,0.6,10.0,8.3,Sweden
+760489,2026-06-29,Round Of 32,Germany,Japan,hybrid-prior,2.8,1.4,18.1,10.1,0.6,0.6,10.6,6.4,Germany
+760488,2026-06-30,Round Of 32,Netherlands,Morocco,hybrid-prior,1.8,1.2,11.2,10.9,0.9,0.6,6.4,8.7,Netherlands
+760490,2026-06-30,Round Of 32,Ivory Coast,Norway,hybrid-prior,1.2,1.7,10.9,11.1,1.4,0.6,8.1,9.0,Norway
+760492,2026-06-30,Round Of 32,France,Paraguay,hybrid-prior,2.1,1.1,12.9,8.5,0.6,1.3,5.5,11.5,France
+760491,2026-07-01,Round Of 32,Mexico,Scotland,hybrid-prior,1.3,0.8,10.6,7.7,0.8,1.0,8.4,11.7,Mexico
+760493,2026-07-01,Round Of 32,New Zealand,Jordan,hybrid-prior,1.6,1.2,11.5,9.8,0.6,0.6,7.0,6.8,New Zealand
+760495,2026-07-01,Round Of 32,England,Congo DR,hybrid-prior,2.1,1.2,15.5,8.9,0.6,0.9,7.2,8.1,England
+760494,2026-07-02,Round Of 32,United States,Bosnia-Herzegovina,hybrid-prior,1.9,1.1,12.4,8.0,0.8,1.2,9.2,13.1,United States
+760496,2026-07-02,Round Of 32,Portugal,Croatia,hybrid-prior,1.5,1.4,9.9,10.2,1.3,0.6,7.2,8.4,Portugal
+760497,2026-07-02,Round Of 32,Uruguay,Austria,hybrid-prior,1.3,1.5,15.0,10.4,0.6,0.8,5.9,8.7,Austria
+760498,2026-07-03,Round Of 32,Canada,Ecuador,hybrid-prior,2.0,0.9,16.0,9.5,0.7,0.9,7.7,9.7,Canada
+760499,2026-07-03,Round Of 32,Australia,Iran,hybrid-prior,1.3,1.4,8.6,12.1,0.9,0.9,10.4,8.1,Iran
+760500,2026-07-03,Round Of 32,Argentina,Spain,hybrid-prior,1.7,0.9,11.2,14.6,0.6,0.8,8.6,8.0,Argentina
+760501,2026-07-04,Round Of 32,Colombia,Ghana,hybrid-prior,1.7,1.1,12.4,8.5,0.7,0.9,7.8,7.7,Colombia
+760502,2026-07-04,Round Of 16,Switzerland,Germany,hybrid-prior,1.6,2.8,14.0,18.1,0.6,0.6,7.6,10.6,Germany
+760503,2026-07-04,Round Of 16,Sweden,Norway,hybrid-prior,2.1,2.0,13.0,11.8,0.6,0.6,8.3,8.9,Sweden
+760504,2026-07-05,Round Of 16,Netherlands,France,hybrid-prior,1.8,1.9,11.2,12.5,0.9,0.6,6.4,5.5,France
+760505,2026-07-06,Round Of 16,Mexico,New Zealand,hybrid-prior,1.5,1.3,11.1,10.8,0.7,0.6,8.3,7.2,Mexico
+760506,2026-07-06,Round Of 16,Portugal,Austria,hybrid-prior,1.3,1.5,9.4,10.4,1.3,0.8,7.3,8.7,Austria
+760507,2026-07-07,Round Of 16,England,United States,hybrid-prior,2.0,1.7,15.3,11.9,0.6,0.8,7.2,9.3,England
+760508,2026-07-07,Round Of 16,Canada,Argentina,hybrid-prior,1.8,1.7,15.5,11.2,0.7,0.6,7.7,8.6,Canada
+760509,2026-07-07,Round Of 16,Iran,Colombia,hybrid-prior,1.5,1.8,12.4,12.6,0.8,0.7,8.1,7.7,Colombia
+760510,2026-07-09,Quarterfinals,Germany,Sweden,hybrid-prior,3.1,2.0,18.7,12.7,0.6,0.6,10.6,8.3,Germany
+760511,2026-07-10,Quarterfinals,Austria,England,hybrid-prior,1.6,2.0,10.6,15.3,0.8,0.6,8.6,7.2,England
+760512,2026-07-11,Quarterfinals,France,Mexico,hybrid-prior,1.8,1.2,12.3,10.4,0.6,0.8,5.5,8.4,France
+760513,2026-07-12,Quarterfinals,Canada,Colombia,hybrid-prior,1.9,1.7,15.8,12.4,0.7,0.7,7.7,7.8,Canada
+760514,2026-07-14,Semifinals,Germany,England,hybrid-prior,2.8,2.0,18.1,15.3,0.6,0.6,10.6,7.2,Germany
+760515,2026-07-15,Semifinals,France,Canada,hybrid-prior,1.9,1.8,12.5,15.5,0.6,0.7,5.5,7.7,France
+760516,2026-07-18,3Rd Place Match,England,Canada,hybrid-prior,2.0,1.9,15.3,15.8,0.6,0.7,7.2,7.7,England
+760517,2026-07-19,Final,Germany,France,hybrid-prior,2.7,1.8,17.9,12.3,0.6,0.6,10.6,5.5,Germany

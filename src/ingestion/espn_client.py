@@ -30,23 +30,54 @@ class ESPNClient:
         retrieved_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         return normalize_completed_events(response.json(), retrieved_at=retrieved_at)
 
+    def fetch_matches_for_date(self, match_date: date) -> list[dict]:
+        response = self.session.get(
+            self.SCOREBOARD_URL,
+            params={"dates": match_date.strftime("%Y%m%d")},
+            timeout=self.timeout,
+            verify=self.verify_ssl,
+        )
+        response.raise_for_status()
+        retrieved_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        return normalize_unplayed_events(response.json(), retrieved_at=retrieved_at)
+
 
 def normalize_completed_events(payload: dict[str, Any], retrieved_at: str) -> list[dict]:
     rows: list[dict] = []
     for event in payload.get("events", []):
-        normalized = _normalize_completed_event(event, retrieved_at)
+        normalized = _normalize_event(event, retrieved_at, require_completed=True)
         if normalized is not None:
             rows.append(normalized)
     return rows
 
 
-def _normalize_completed_event(event: dict[str, Any], retrieved_at: str) -> dict | None:
+def normalize_unplayed_events(payload: dict[str, Any], retrieved_at: str) -> list[dict]:
+    rows: list[dict] = []
+    for event in payload.get("events", []):
+        normalized = _normalize_event(event, retrieved_at, require_completed=False)
+        if normalized is not None:
+            rows.append(normalized)
+    return rows
+
+
+def _normalize_event(
+    event: dict[str, Any],
+    retrieved_at: str,
+    *,
+    require_completed: bool,
+) -> dict | None:
     competition = _first_competition(event)
-    if competition is None or not _is_completed(event, competition):
+    if competition is None:
         return None
 
-    home_team = _find_competitor(competition, "home")
-    away_team = _find_competitor(competition, "away")
+    is_completed = _is_completed(event, competition)
+    if require_completed and not is_completed:
+        return None
+    if not require_completed and is_completed:
+        return None
+
+    home_team = _find_competitor(competition, "home", is_completed=is_completed)
+    away_team = _find_competitor(competition, "away", is_completed=is_completed)
     if home_team is None or away_team is None:
         return None
 
@@ -58,13 +89,19 @@ def _normalize_completed_event(event: dict[str, Any], retrieved_at: str) -> dict
     return {
         "match_id": str(match_id),
         "match_date": match_date,
-        "stage": _read_stage(competition),
+        "stage": _read_stage(event, competition),
         "home_team": home_team["team"],
+        "home_team_id": home_team["team_id"],
         "away_team": away_team["team"],
+        "away_team_id": away_team["team_id"],
         "home_goals": home_team["score"],
         "away_goals": away_team["score"],
         "home_shots": home_team["shots"],
         "away_shots": away_team["shots"],
+        "home_cards": home_team["cards"],
+        "away_cards": away_team["cards"],
+        "home_fouls": home_team["fouls"],
+        "away_fouls": away_team["fouls"],
         "status": _read_status(event, competition),
         "source": "espn",
         "source_retrieved_at": retrieved_at,
@@ -91,7 +128,12 @@ def _is_completed(event: dict[str, Any], competition: dict[str, Any]) -> bool:
     return bool(status_type.get("completed"))
 
 
-def _find_competitor(competition: dict[str, Any], home_away: str) -> dict | None:
+def _find_competitor(
+    competition: dict[str, Any],
+    home_away: str,
+    *,
+    is_completed: bool,
+) -> dict | None:
     for competitor in competition.get("competitors", []):
         if competitor.get("homeAway") != home_away:
             continue
@@ -99,13 +141,20 @@ def _find_competitor(competition: dict[str, Any], home_away: str) -> dict | None
         team_name = team.get("displayName") or team.get("shortDisplayName") or team.get("name")
         if not team_name:
             return None
-        score = competitor.get("score")
-        if score is None:
-            return None
+        statistics = competitor.get("statistics") or []
+        score: int | None = None
+        if is_completed:
+            raw_score = competitor.get("score")
+            if raw_score is None:
+                return None
+            score = int(raw_score)
         return {
             "team": str(team_name),
-            "score": int(score),
-            "shots": _read_stat_value(competitor.get("statistics") or [], "totalShots"),
+            "team_id": str(team.get("id")) if team.get("id") is not None else None,
+            "score": score,
+            "shots": _read_stat_value(statistics, "totalShots") if is_completed else None,
+            "fouls": _read_stat_value(statistics, "foulsCommitted") if is_completed else None,
+            "cards": _read_cards_value(statistics) if is_completed else None,
         }
     return None
 
@@ -124,10 +173,24 @@ def _read_stat_value(statistics: list[dict[str, Any]], target_name: str) -> int 
     return None
 
 
-def _read_stage(competition: dict[str, Any]) -> str:
+def _read_cards_value(statistics: list[dict[str, Any]]) -> int | None:
+    yellow_cards = _read_stat_value(statistics, "yellowCards")
+    red_cards = _read_stat_value(statistics, "redCards")
+    if yellow_cards is None and red_cards is None:
+        return None
+    return int((yellow_cards or 0) + (red_cards or 0))
+
+
+def _read_stage(event: dict[str, Any], competition: dict[str, Any]) -> str:
     alt_game_note = competition.get("altGameNote")
     if isinstance(alt_game_note, str) and "," in alt_game_note:
         return alt_game_note.split(",", 1)[1].strip()
+
+    season = event.get("season") or {}
+    if isinstance(season, dict):
+        season_slug = season.get("slug")
+        if season_slug:
+            return str(season_slug).replace("-", " ").title()
 
     competition_type = competition.get("type") or {}
     if isinstance(competition_type, dict):

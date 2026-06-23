@@ -1,1 +1,105 @@
-match_id,predicted_home_goals,predicted_away_goals,predicted_winner
+match_id,match_date,stage,home_team,away_team,model_name,status,is_future_fixture,predicted_home_goals,predicted_away_goals,predicted_home_shots,predicted_away_shots,predicted_home_cards,predicted_away_cards,predicted_home_fouls,predicted_away_fouls,predicted_winner
+760415,2026-06-11 00:00:00,Group A,Mexico,South Africa,hybrid-prior,Full Time,False,1.3818,1.0715999999999999,9.6914,9.174399999999999,,,7.93,8.58,Mexico
+760414,2026-06-12 00:00:00,Group A,South Korea,Czechia,hybrid-prior,Full Time,False,1.1938,1.2032,9.437599999999998,9.1274,,,7.35,9.57,Czechia
+760416,2026-06-12 00:00:00,Group B,Canada,Bosnia-Herzegovina,hybrid-prior,Full Time,False,1.7389999999999999,1.1938,12.2858,7.942999999999999,,,7.87,11.13,Canada
+760417,2026-06-13 00:00:00,Group D,United States,Paraguay,hybrid-prior,Full Time,False,1.5415999999999999,1.1938,10.1144,8.3566,,,8.76,10.1,United States
+760419,2026-06-13 00:00:00,Group C,Brazil,Morocco,hybrid-prior,Full Time,False,1.645,1.2878,9.9828,10.2648,,,8.98,8.06,Brazil
+760420,2026-06-13 00:00:00,Group B,Qatar,Switzerland,hybrid-prior,Full Time,False,0.9211999999999999,1.5979999999999999,7.2661999999999995,11.4774,,,8.38,7.69,Switzerland
+760418,2026-06-14 00:00:00,Group C,Haiti,Scotland,hybrid-prior,Full Time,False,0.9211999999999999,1.0621999999999998,9.3718,8.2156,,,11.38,10.1,Scotland
+760421,2026-06-14 00:00:00,Group D,Australia,Türkiye,hybrid-prior,Full Time,False,1.1938,0.9211999999999999,8.084,14.598199999999999,,,9.41,7.69,Australia
+760422,2026-06-14 00:00:00,Group E,Germany,Curaçao,hybrid-prior,Full Time,False,2.9516,1.2314,13.996599999999999,8.6668,,,10.19,8.92,Germany
+760423,2026-06-14 00:00:00,Group E,Ivory Coast,Ecuador,hybrid-prior,Full Time,False,1.1938,0.9211999999999999,10.2554,9.653799999999999,,,8.04,9.37,Ivory Coast
+760425,2026-06-14 00:00:00,Group F,Netherlands,Japan,hybrid-prior,Full Time,False,1.5885999999999998,1.5415999999999999,9.635,9.2496,,,6.41,6.65,Netherlands
+760424,2026-06-15 00:00:00,Group F,Sweden,Tunisia,hybrid-prior,Full Time,False,2.2842000000000002,1.1938,9.7102,7.8114,,,8.04,7.35,Sweden
+760426,2026-06-15 00:00:00,Group G,Belgium,Egypt,hybrid-prior,Full Time,False,0.9211999999999999,1.1938,10.2554,9.9828,,,9.76,9.76,Egypt
+760428,2026-06-15 00:00:00,Group H,Spain,Cape Verde,hybrid-prior,Full Time,False,1.0715999999999999,0.9211999999999999,14.833199999999998,7.8114,,,7.67,4.94,Spain
+760429,2026-06-15 00:00:00,Group H,Saudi Arabia,Uruguay,hybrid-prior,Full Time,False,1.1938,1.3065999999999998,8.084,14.128199999999998,,,8.38,6.06,Uruguay
+760427,2026-06-16 00:00:00,Group G,Iran,New Zealand,hybrid-prior,Full Time,False,1.504,1.4664,11.1014,9.9828,,,8.27,7.35,Iran
+760430,2026-06-16 00:00:00,Group I,Iraq,Norway,hybrid-prior,Full Time,False,1.1938,1.7389999999999999,9.165,9.437599999999998,,,8.72,9.07,Norway
+760432,2026-06-16 00:00:00,Group I,France,Senegal,hybrid-prior,Full Time,False,2.1243999999999996,1.2596,11.063799999999999,8.1404,,,6.12,7.37,France
+760431,2026-06-17 00:00:00,Group J,Austria,Jordan,hybrid-prior,Full Time,False,1.4664,1.1938,9.165,9.165,,,8.72,7.01,Austria
+760433,2026-06-17 00:00:00,Group J,Argentina,Algeria,hybrid-prior,Full Time,False,1.9269999999999998,0.9211999999999999,9.963999999999999,8.084,,,8.47,7.35,Argentina
+760434,2026-06-17 00:00:00,Group L,Ghana,Panama,hybrid-prior,Full Time,False,1.1938,0.9211999999999999,8.3566,9.3718,,,7.69,8.63,Ghana
+760435,2026-06-17 00:00:00,Group K,Portugal,Congo DR,hybrid-prior,Full Time,False,1.3723999999999998,1.1938,9.1086,8.3566,,,7.3,8.04,Portugal
+760437,2026-06-17 00:00:00,Group L,England,Croatia,hybrid-prior,Full Time,False,2.1807999999999996,1.5603999999999998,13.150599999999999,9.4188,,,7.44,8.21,England
+760436,2026-06-18 00:00:00,Group K,Uzbekistan,Colombia,hybrid-prior,Full Time,False,1.1938,1.8423999999999998,8.3566,10.809999999999999,,,9.41,7.9,Colombia
+760438,2026-06-18 00:00:00,Group A,Czechia,South Africa,hybrid-prior,Full Time,False,1.1154666666666666,0.7143999999999999,8.278266666666667,7.056266666666667,,,11.713333333333335,9.386666666666667,Czechia
+760439,2026-06-18 00:00:00,Group B,Switzerland,Bosnia-Herzegovina,hybrid-prior,Full Time,False,1.3786666666666667,1.1092000000000002,15.798266666666667,7.8020000000000005,,,8.793333333333335,14.086666666666668,Switzerland
+760440,2026-06-18 00:00:00,Group B,Canada,Qatar,hybrid-prior,Full Time,False,1.4726666666666668,0.9274666666666668,12.263866666666667,6.7241333333333335,,,8.58,9.586666666666668,Canada
+760441,2026-06-19 00:00:00,Group A,Mexico,South Korea,hybrid-prior,Full Time,False,1.5478666666666667,1.4225333333333334,11.474266666666667,10.991733333333332,,,9.286666666666667,7.9,Mexico
+760442,2026-06-19 00:00:00,Group D,United States,Australia,hybrid-prior,Full Time,False,2.281066666666667,1.4225333333333334,11.756266666666667,8.209333333333333,,,10.173333333333334,10.273333333333333,United States
+760445,2026-06-19 00:00:00,Group C,Scotland,Morocco,hybrid-prior,Full Time,False,1.0214666666666665,1.1718666666666668,8.297066666666668,11.229866666666666,,,13.733333333333334,10.04,Morocco
+760443,2026-06-20 00:00:00,Group D,Türkiye,Paraguay,hybrid-prior,Full Time,False,0.6141333333333334,1.1092000000000002,19.132133333333332,8.391066666666667,,,6.460000000000001,12.4,Paraguay
+760444,2026-06-20 00:00:00,Group C,Brazil,Haiti,hybrid-prior,Full Time,False,1.41,0.6141333333333334,10.415199999999999,10.947866666666668,,,11.32,15.253333333333334,Brazil
+760447,2026-06-20 00:00:00,Group F,Netherlands,Sweden,hybrid-prior,Full Time,False,1.6857333333333333,3.089466666666667,9.556666666666667,10.5468,,,6.606666666666667,8.693333333333333,Sweden
+760448,2026-06-20,Group E,Germany,Ivory Coast,hybrid-prior,Halftime,True,2.8,1.1,18.1,10.7,0.6,1.4,10.6,8.1,Germany
+760446,2026-06-21,Group E,Ecuador,Curaçao,hybrid-prior,Scheduled,True,1.5,1.2,10.8,9.1,0.8,0.6,9.4,8.9,Ecuador
+760449,2026-06-21,Group F,Tunisia,Japan,hybrid-prior,Scheduled,True,1.4,1.7,8.7,10.8,0.8,0.6,7.1,6.2,Japan
+760450,2026-06-21,Group H,Uruguay,Cape Verde,hybrid-prior,Scheduled,True,1.3,0.9,15.0,7.6,0.6,0.9,5.9,5.0,Uruguay
+760451,2026-06-21,Group G,Belgium,Iran,hybrid-prior,Scheduled,True,1.2,1.5,10.9,12.4,1.1,0.8,10.1,8.1,Iran
+760453,2026-06-21,Group H,Spain,Saudi Arabia,hybrid-prior,Scheduled,True,1.2,1.0,15.3,8.1,0.8,0.9,7.8,8.6,Spain
+760452,2026-06-22,Group G,New Zealand,Egypt,hybrid-prior,Scheduled,True,1.6,1.2,11.5,10.6,0.6,1.1,7.0,10.1,New Zealand
+760456,2026-06-22,Group J,Argentina,Austria,hybrid-prior,Scheduled,True,1.9,1.4,11.6,10.2,0.6,0.8,8.5,8.8,Argentina
+760457,2026-06-22,Group I,France,Iraq,hybrid-prior,Scheduled,True,2.2,1.1,13.1,9.5,0.6,0.9,5.5,8.9,France
+760454,2026-06-23,Group I,Norway,Senegal,hybrid-prior,Scheduled,True,2.0,1.2,11.8,8.5,0.6,0.6,8.9,7.4,Norway
+760455,2026-06-23,Group J,Jordan,Algeria,hybrid-prior,Scheduled,True,1.4,1.1,10.2,8.4,0.6,0.6,6.7,7.3,Jordan
+760458,2026-06-23,Group L,England,Ghana,hybrid-prior,Scheduled,True,2.1,1.2,15.5,8.8,0.6,0.9,7.2,7.6,England
+760460,2026-06-23,Group L,Panama,Croatia,hybrid-prior,Scheduled,True,1.2,1.5,9.9,10.4,1.2,0.6,8.7,8.3,Croatia
+760461,2026-06-23,Group K,Portugal,Uzbekistan,hybrid-prior,Scheduled,True,1.5,1.1,9.9,8.7,1.3,0.9,7.2,9.8,Portugal
+760459,2026-06-24,Group K,Colombia,Congo DR,hybrid-prior,Scheduled,True,1.9,1.1,12.8,8.7,0.7,0.9,7.7,8.1,Colombia
+760462,2026-06-24,Group B,Bosnia-Herzegovina,Qatar,hybrid-prior,Scheduled,True,1.6,1.1,9.1,7.0,1.2,1.2,12.8,8.9,Bosnia-Herzegovina
+760463,2026-06-24,Group B,Switzerland,Canada,hybrid-prior,Scheduled,True,1.7,1.9,14.2,15.8,0.6,0.7,7.5,7.7,Canada
+760464,2026-06-24,Group C,Morocco,Haiti,hybrid-prior,Scheduled,True,1.5,0.7,11.6,8.9,0.6,1.0,8.5,13.3,Morocco
+760465,2026-06-24,Group C,Scotland,Brazil,hybrid-prior,Scheduled,True,1.0,1.5,8.1,10.7,0.9,0.7,11.6,10.1,Brazil
+760466,2026-06-25,Group A,South Africa,South Korea,hybrid-prior,Scheduled,True,1.1,1.2,9.4,10.3,1.4,0.8,8.9,7.3,South Korea
+760467,2026-06-25,Group A,Czechia,Mexico,hybrid-prior,Scheduled,True,1.1,1.4,9.5,10.8,0.6,0.7,10.6,8.3,Mexico
+760468,2026-06-25,Group E,Ecuador,Germany,hybrid-prior,Scheduled,True,1.0,2.8,9.8,18.1,0.9,0.6,9.7,10.6,Germany
+760471,2026-06-25,Group F,Japan,Sweden,hybrid-prior,Scheduled,True,1.9,2.1,11.2,13.0,0.6,0.6,6.2,8.3,Sweden
+760472,2026-06-25,Group F,Tunisia,Netherlands,hybrid-prior,Scheduled,True,1.3,2.1,8.5,11.8,0.8,0.9,7.2,6.4,Netherlands
+760473,2026-06-25,Group E,Curaçao,Ivory Coast,hybrid-prior,Scheduled,True,1.3,1.6,9.3,11.8,0.6,1.3,8.8,7.8,Ivory Coast
+760469,2026-06-26,Group D,Paraguay,Australia,hybrid-prior,Scheduled,True,1.3,1.3,9.0,8.6,1.3,0.9,11.4,10.4,Draw
+760470,2026-06-26,Group D,Türkiye,United States,hybrid-prior,Scheduled,True,0.9,1.8,16.8,12.2,0.7,0.8,8.0,9.2,United States
+760474,2026-06-26,Group I,Senegal,Iraq,hybrid-prior,Scheduled,True,1.5,1.3,9.1,10.0,0.6,0.8,7.2,8.8,Senegal
+760475,2026-06-26,Group I,Norway,France,hybrid-prior,Scheduled,True,1.8,1.9,11.3,12.5,0.6,0.6,8.9,5.5,France
+760476,2026-06-27,Group G,Egypt,Iran,hybrid-prior,Scheduled,True,1.4,1.5,11.1,12.4,1.1,0.8,10.0,8.1,Iran
+760477,2026-06-27,Group G,New Zealand,Belgium,hybrid-prior,Scheduled,True,1.6,1.1,11.5,10.7,0.6,1.1,7.0,10.2,New Zealand
+760478,2026-06-27,Group H,Cape Verde,Saudi Arabia,hybrid-prior,Scheduled,True,1.1,1.1,8.1,8.4,0.9,0.9,5.0,8.5,Draw
+760479,2026-06-27,Group H,Uruguay,Spain,hybrid-prior,Scheduled,True,1.2,1.0,14.8,14.9,0.6,0.8,5.9,7.9,Uruguay
+760480,2026-06-27,Group L,Croatia,Ghana,hybrid-prior,Scheduled,True,1.6,1.3,10.7,9.0,0.6,0.8,8.3,7.6,Croatia
+760481,2026-06-27,Group K,Colombia,Portugal,hybrid-prior,Scheduled,True,1.8,1.2,12.6,9.2,0.7,1.3,7.7,7.3,Colombia
+760482,2026-06-27,Group K,Congo DR,Uzbekistan,hybrid-prior,Scheduled,True,1.4,1.2,9.3,8.9,0.8,0.9,7.9,9.7,Congo DR
+760485,2026-06-27,Group L,Panama,England,hybrid-prior,Scheduled,True,1.1,2.0,9.7,15.3,1.2,0.6,8.7,7.2,England
+760483,2026-06-28,Group J,Jordan,Argentina,hybrid-prior,Scheduled,True,1.2,1.9,9.8,11.6,0.6,0.6,6.8,8.5,Argentina
+760484,2026-06-28,Group J,Algeria,Austria,hybrid-prior,Scheduled,True,1.1,1.7,8.4,10.8,0.6,0.8,7.3,8.6,Austria
+760486,2026-06-28,Round Of 32,South Korea,Switzerland,hybrid-prior,Scheduled,True,1.2,1.6,10.3,14.0,0.8,0.6,7.3,7.6,Switzerland
+760487,2026-06-29,Round Of 32,Brazil,Sweden,hybrid-prior,Scheduled,True,1.8,1.9,11.4,12.5,0.6,0.6,10.0,8.3,Sweden
+760489,2026-06-29,Round Of 32,Germany,Japan,hybrid-prior,Scheduled,True,2.8,1.4,18.1,10.1,0.6,0.6,10.6,6.4,Germany
+760488,2026-06-30,Round Of 32,Netherlands,Morocco,hybrid-prior,Scheduled,True,1.8,1.2,11.2,10.9,0.9,0.6,6.4,8.7,Netherlands
+760490,2026-06-30,Round Of 32,Ivory Coast,Norway,hybrid-prior,Scheduled,True,1.2,1.7,10.9,11.1,1.4,0.6,8.1,9.0,Norway
+760492,2026-06-30,Round Of 32,France,Paraguay,hybrid-prior,Scheduled,True,2.1,1.1,12.9,8.5,0.6,1.3,5.5,11.5,France
+760491,2026-07-01,Round Of 32,Mexico,Scotland,hybrid-prior,Scheduled,True,1.3,0.8,10.6,7.7,0.8,1.0,8.4,11.7,Mexico
+760493,2026-07-01,Round Of 32,New Zealand,Jordan,hybrid-prior,Scheduled,True,1.6,1.2,11.5,9.8,0.6,0.6,7.0,6.8,New Zealand
+760495,2026-07-01,Round Of 32,England,Congo DR,hybrid-prior,Scheduled,True,2.1,1.2,15.5,8.9,0.6,0.9,7.2,8.1,England
+760494,2026-07-02,Round Of 32,United States,Bosnia-Herzegovina,hybrid-prior,Scheduled,True,1.9,1.1,12.4,8.0,0.8,1.2,9.2,13.1,United States
+760496,2026-07-02,Round Of 32,Portugal,Croatia,hybrid-prior,Scheduled,True,1.5,1.4,9.9,10.2,1.3,0.6,7.2,8.4,Portugal
+760497,2026-07-02,Round Of 32,Uruguay,Austria,hybrid-prior,Scheduled,True,1.3,1.5,15.0,10.4,0.6,0.8,5.9,8.7,Austria
+760498,2026-07-03,Round Of 32,Canada,Ecuador,hybrid-prior,Scheduled,True,2.0,0.9,16.0,9.5,0.7,0.9,7.7,9.7,Canada
+760499,2026-07-03,Round Of 32,Australia,Iran,hybrid-prior,Scheduled,True,1.3,1.4,8.6,12.1,0.9,0.9,10.4,8.1,Iran
+760500,2026-07-03,Round Of 32,Argentina,Spain,hybrid-prior,Scheduled,True,1.7,0.9,11.2,14.6,0.6,0.8,8.6,8.0,Argentina
+760501,2026-07-04,Round Of 32,Colombia,Ghana,hybrid-prior,Scheduled,True,1.7,1.1,12.4,8.5,0.7,0.9,7.8,7.7,Colombia
+760502,2026-07-04,Round Of 16,Switzerland,Germany,hybrid-prior,Scheduled,True,1.6,2.8,14.0,18.1,0.6,0.6,7.6,10.6,Germany
+760503,2026-07-04,Round Of 16,Sweden,Norway,hybrid-prior,Scheduled,True,2.1,2.0,13.0,11.8,0.6,0.6,8.3,8.9,Sweden
+760504,2026-07-05,Round Of 16,Netherlands,France,hybrid-prior,Scheduled,True,1.8,1.9,11.2,12.5,0.9,0.6,6.4,5.5,France
+760505,2026-07-06,Round Of 16,Mexico,New Zealand,hybrid-prior,Scheduled,True,1.5,1.3,11.1,10.8,0.7,0.6,8.3,7.2,Mexico
+760506,2026-07-06,Round Of 16,Portugal,Austria,hybrid-prior,Scheduled,True,1.3,1.5,9.4,10.4,1.3,0.8,7.3,8.7,Austria
+760507,2026-07-07,Round Of 16,England,United States,hybrid-prior,Scheduled,True,2.0,1.7,15.3,11.9,0.6,0.8,7.2,9.3,England
+760508,2026-07-07,Round Of 16,Canada,Argentina,hybrid-prior,Scheduled,True,1.8,1.7,15.5,11.2,0.7,0.6,7.7,8.6,Canada
+760509,2026-07-07,Round Of 16,Iran,Colombia,hybrid-prior,Scheduled,True,1.5,1.8,12.4,12.6,0.8,0.7,8.1,7.7,Colombia
+760510,2026-07-09,Quarterfinals,Germany,Sweden,hybrid-prior,Scheduled,True,3.1,2.0,18.7,12.7,0.6,0.6,10.6,8.3,Germany
+760511,2026-07-10,Quarterfinals,Austria,England,hybrid-prior,Scheduled,True,1.6,2.0,10.6,15.3,0.8,0.6,8.6,7.2,England
+760512,2026-07-11,Quarterfinals,France,Mexico,hybrid-prior,Scheduled,True,1.8,1.2,12.3,10.4,0.6,0.8,5.5,8.4,France
+760513,2026-07-12,Quarterfinals,Canada,Colombia,hybrid-prior,Scheduled,True,1.9,1.7,15.8,12.4,0.7,0.7,7.7,7.8,Canada
+760514,2026-07-14,Semifinals,Germany,England,hybrid-prior,Scheduled,True,2.8,2.0,18.1,15.3,0.6,0.6,10.6,7.2,Germany
+760515,2026-07-15,Semifinals,France,Canada,hybrid-prior,Scheduled,True,1.9,1.8,12.5,15.5,0.6,0.7,5.5,7.7,France
+760516,2026-07-18,3Rd Place Match,England,Canada,hybrid-prior,Scheduled,True,2.0,1.9,15.3,15.8,0.6,0.7,7.2,7.7,England
+760517,2026-07-19,Final,Germany,France,hybrid-prior,Scheduled,True,2.7,1.8,17.9,12.3,0.6,0.6,10.6,5.5,Germany

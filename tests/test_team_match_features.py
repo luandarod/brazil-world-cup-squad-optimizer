@@ -5,7 +5,30 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.features.player_context_features import build_player_context_features
 from src.features.team_match_features import build_team_match_features
+
+
+def test_build_player_context_features_aggregates_lineup_and_bench_signals() -> None:
+    matches = pd.DataFrame(
+        [
+            {
+                "match_id": "760419",
+                "team": "Brazil",
+                "match_date": "2026-06-13",
+                "home_lineup_confirmed": True,
+                "home_probable_lineup_count": 11,
+                "home_substitutions_used": 5,
+                "home_player_minutes_proxy": 990,
+            }
+        ]
+    )
+
+    featured = build_player_context_features(matches, team_column="team")
+
+    assert featured.loc[0, "lineup_confirmed_flag"] == 1.0
+    assert featured.loc[0, "probable_lineup_completeness"] == 1.0
+    assert featured.loc[0, "bench_usage_rate"] == 1.0
 
 
 def test_build_team_match_features_adds_shifted_recent_form_averages() -> None:
@@ -109,3 +132,29 @@ def test_build_team_match_features_adds_shifted_recent_form_averages() -> None:
             "team_shots_avg_last_3": 3.0,
         },
     }
+
+
+def test_build_team_match_features_merges_recent_form_and_player_context() -> None:
+    matches = pd.DataFrame(
+        [
+            {
+                "match_id": "bra-1",
+                "match_date": "2026-06-01",
+                "team": "Brazil",
+                "goals_for": 1,
+                "cards_for": 2,
+                "shots_for": 3,
+                "home_lineup_confirmed": True,
+                "home_probable_lineup_count": 11,
+                "home_substitutions_used": 5,
+            }
+        ]
+    )
+
+    featured = build_team_match_features(matches)
+
+    assert "lineup_confirmed_flag" in featured.columns
+    assert "probable_lineup_completeness" in featured.columns
+    assert "bench_usage_rate" in featured.columns
+    assert "team_goals_avg_last_3" in featured.columns
+    assert featured.loc[0, "lineup_confirmed_flag"] == 1.0

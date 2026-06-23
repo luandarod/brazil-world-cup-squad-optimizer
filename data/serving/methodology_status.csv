@@ -1,0 +1,5 @@
+metric_name,has_truth,truth_coverage_pct,has_predictions,publish_status
+goals,True,100.0,True,published
+cards,False,0.0,True,forecast-only
+fouls,True,100.0,True,published
+shots,True,100.0,True,published

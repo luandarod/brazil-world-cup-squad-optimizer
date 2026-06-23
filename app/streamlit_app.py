@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from html import escape
 from pathlib import Path
 import sys
-from html import escape
+from textwrap import dedent
 
 import pandas as pd
 import streamlit as st
@@ -10,186 +13,507 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.serving.load_outputs import (
-    read_match_predictions,
     read_coverage_summary,
+    read_group_forecast_summary,
+    read_knockout_forecast_summary,
+    read_match_prediction_vs_actual,
+    read_match_predictions,
+    read_methodology_status,
     read_model_leaderboard,
     read_observed_match_results,
+    read_team_forecast_summary,
     read_team_summary,
+    read_title_probability_summary,
+    read_top_scorer_forecast,
 )
 
-st.set_page_config(page_title="World Cup Forecasting Lab", layout="wide")
+st.set_page_config(page_title="Laboratório de Forecast da Copa", layout="wide")
 
 SERVING_DIR = ROOT / "data" / "serving"
+ROUND_ORDER = [
+    "Round Of 32",
+    "Round Of 16",
+    "Quarterfinal",
+    "Quarterfinals",
+    "Semifinal",
+    "Semifinals",
+    "Third Place",
+    "3Rd Place Match",
+    "Final",
+]
+ROUND_LABELS = {
+    "Round Of 32": "16 avos",
+    "Round Of 16": "Oitavas",
+    "Quarterfinal": "Quartas",
+    "Quarterfinals": "Quartas",
+    "Semifinal": "Semifinal",
+    "Semifinals": "Semifinal",
+    "Third Place": "3º lugar",
+    "3Rd Place Match": "3º lugar",
+    "Final": "Final",
+}
+MODEL_LABELS = {
+    "hybrid-prior": "Híbrido pré-jogo + forma",
+    "goals_for": "Gols",
+    "shots_for": "Chutes",
+    "cards_for": "Cartões",
+    "fouls_for": "Faltas",
+    "goals": "Gols",
+    "shots": "Chutes",
+    "cards": "Cartões",
+    "fouls": "Faltas",
+}
+PUBLISH_STATUS_LABELS = {
+    "published": "publicado",
+    "forecast-only": "forecast público sem verdade completa",
+    "truth-only": "verdade observada sem forecast público",
+    "truth-unavailable": "sem verdade observada suficiente",
+    "coverage-only": "somente cobertura",
+}
+TEAM_NAMES_PT = {
+    "Algeria": "Argélia",
+    "Argentina": "Argentina",
+    "Australia": "Austrália",
+    "Austria": "Áustria",
+    "Belgium": "Bélgica",
+    "Bosnia-Herzegovina": "Bósnia e Herzegovina",
+    "Brazil": "Brasil",
+    "Canada": "Canadá",
+    "Cape Verde": "Cabo Verde",
+    "Colombia": "Colômbia",
+    "Congo DR": "RD Congo",
+    "Croatia": "Croácia",
+    "Curaçao": "Curaçao",
+    "Czechia": "Tchéquia",
+    "Ecuador": "Equador",
+    "Egypt": "Egito",
+    "England": "Inglaterra",
+    "France": "França",
+    "Germany": "Alemanha",
+    "Ghana": "Gana",
+    "Haiti": "Haiti",
+    "Iran": "Irã",
+    "Iraq": "Iraque",
+    "Ivory Coast": "Costa do Marfim",
+    "Japan": "Japão",
+    "Jordan": "Jordânia",
+    "Mexico": "México",
+    "Morocco": "Marrocos",
+    "Netherlands": "Países Baixos",
+    "New Zealand": "Nova Zelândia",
+    "Norway": "Noruega",
+    "Panama": "Panamá",
+    "Paraguay": "Paraguai",
+    "Portugal": "Portugal",
+    "Qatar": "Catar",
+    "Saudi Arabia": "Arábia Saudita",
+    "Scotland": "Escócia",
+    "Senegal": "Senegal",
+    "South Africa": "África do Sul",
+    "South Korea": "Coreia do Sul",
+    "Spain": "Espanha",
+    "Sweden": "Suécia",
+    "Switzerland": "Suíça",
+    "Tunisia": "Tunísia",
+    "Türkiye": "Turquia",
+    "United States": "Estados Unidos",
+    "Uruguay": "Uruguai",
+    "Uzbekistan": "Uzbequistão",
+}
 
 
 def _inject_styles() -> None:
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #f6f4ee;
+            --surface: #fffdf8;
+            --line: #d7dfd9;
+            --ink: #10251f;
+            --muted: #61756d;
+            --teal-950: #0b2f28;
+            --teal-900: #11483d;
+            --teal-700: #18715e;
+            --teal-100: #dbf0e8;
+            --gold-100: #efe7d0;
+            --shadow: 0 18px 40px rgba(10, 42, 35, 0.08);
+            --radius-lg: 24px;
+            --radius-md: 18px;
+            --radius-sm: 14px;
+        }
+        .stApp {
+            background:
+                radial-gradient(circle at top right, rgba(24, 113, 94, 0.10), transparent 24%),
+                linear-gradient(180deg, #fbfaf6 0%, var(--bg) 100%);
+            color: var(--ink);
+            font-family: "IBM Plex Sans", sans-serif;
+        }
         .block-container {
-            padding-top: 2.2rem;
+            max-width: 1340px;
+            padding-top: 1.6rem;
             padding-bottom: 3rem;
-            max-width: 1200px;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0.5rem;
+            padding: 0.55rem;
+            margin-bottom: 1.2rem;
+            border: 1px solid rgba(16, 37, 31, 0.10);
+            border-radius: 18px;
+            background: rgba(255, 253, 248, 0.92);
+            box-shadow: 0 12px 28px rgba(10, 42, 35, 0.07);
+            backdrop-filter: blur(10px);
+        }
+        .stTabs [data-baseweb="tab"] {
+            min-height: 44px;
+            padding: 0.55rem 0.95rem 0.5rem 0.95rem;
+            border-radius: 12px;
+            color: rgba(16, 37, 31, 0.72);
+            font-family: "Barlow Condensed", sans-serif;
+            font-size: 1.05rem;
+            letter-spacing: 0.01em;
+            transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+        }
+        .stTabs [data-baseweb="tab"]:hover {
+            background: rgba(24, 113, 94, 0.08);
+            color: var(--ink);
+        }
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(180deg, rgba(24, 113, 94, 0.16) 0%, rgba(24, 113, 94, 0.10) 100%);
+            color: var(--teal-950);
+            box-shadow: inset 0 -2px 0 var(--teal-700);
+        }
+        .stTabs [data-baseweb="tab-highlight"] {
+            background: var(--teal-700);
+            height: 3px;
+            border-radius: 999px;
+        }
+        h1, h2, h3, h4, .kicker, .section-title, .metric-value, .match-score, .team-badge, .rank-number, .bracket-round-title {
+            font-family: "Barlow Condensed", sans-serif;
+            letter-spacing: 0.01em;
         }
         .hero-shell {
-            background: linear-gradient(135deg, #0b3b3f 0%, #0f5c61 45%, #eef5f4 100%);
-            border: 1px solid rgba(15, 92, 97, 0.18);
-            border-radius: 24px;
-            padding: 28px 30px;
-            color: #f5fbfa;
-            box-shadow: 0 24px 60px rgba(8, 41, 43, 0.16);
-            margin-bottom: 1.2rem;
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+            background:
+                linear-gradient(135deg, rgba(11, 47, 40, 0.98), rgba(17, 72, 61, 0.96));
+            color: #f5f7f2;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 26px 68px rgba(11, 47, 40, 0.18);
         }
-        .hero-kicker {
+        .hero-shell::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 14% 18%, rgba(255,255,255,0.09), transparent 18%),
+                linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 48%, transparent 50%),
+                repeating-linear-gradient(180deg, transparent 0 38px, rgba(255,255,255,0.05) 38px 39px);
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .kicker {
             text-transform: uppercase;
-            letter-spacing: 0.14em;
-            font-size: 0.75rem;
-            font-weight: 700;
-            opacity: 0.82;
-            margin-bottom: 10px;
-        }
-        .hero-title {
-            font-size: 2.6rem;
-            line-height: 1.02;
-            font-weight: 700;
-            margin: 0;
-            max-width: 780px;
-        }
-        .hero-subtitle {
-            margin-top: 14px;
-            font-size: 1.02rem;
-            line-height: 1.7;
-            color: rgba(245, 251, 250, 0.9);
-            max-width: 760px;
-        }
-        .section-heading {
-            margin-top: 1.8rem;
-            margin-bottom: 0.35rem;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #102a2c;
-        }
-        .section-copy {
-            margin-bottom: 0.9rem;
-            color: #4c6668;
-            font-size: 0.98rem;
-        }
-        .chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            margin: 0.8rem 0 1.3rem 0;
-        }
-        .coverage-chip {
-            padding: 0.78rem 0.95rem;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 92, 97, 0.16);
-            background: #ffffff;
-            color: #15383b;
-            min-width: 160px;
-            box-shadow: 0 8px 24px rgba(10, 41, 43, 0.06);
-        }
-        .coverage-chip strong {
-            display: block;
             font-size: 0.92rem;
-            margin-bottom: 0.18rem;
-        }
-        .coverage-chip span {
-            font-size: 0.86rem;
-            color: #537072;
-        }
-        .coverage-chip.is-live {
-            background: linear-gradient(180deg, #ffffff 0%, #eef8f7 100%);
-            border-color: rgba(14, 130, 118, 0.24);
-        }
-        .coverage-chip.is-missing {
-            background: linear-gradient(180deg, #ffffff 0%, #f7f3ef 100%);
-            border-color: rgba(161, 104, 39, 0.18);
-        }
-        .scoreboard-grid, .architecture-grid, .publish-grid {
-            display: grid;
-            gap: 0.9rem;
-        }
-        .scoreboard-grid {
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            margin-bottom: 1.4rem;
-        }
-        .architecture-grid {
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            margin: 0.8rem 0 1.5rem 0;
-        }
-        .publish-grid {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            margin: 0.8rem 0 1.2rem 0;
-        }
-        .scoreboard-card, .architecture-card, .publish-card {
-            background: #ffffff;
-            border: 1px solid rgba(15, 92, 97, 0.14);
-            border-radius: 20px;
-            padding: 1rem 1.05rem;
-            box-shadow: 0 14px 34px rgba(11, 43, 45, 0.08);
-        }
-        .scoreboard-card {
-            min-height: 190px;
-        }
-        .scoreboard-topline {
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #0f5c61;
+            letter-spacing: 0.12em;
+            color: rgba(245,247,242,0.82);
             margin-bottom: 0.55rem;
         }
-        .scoreboard-status {
-            font-size: 0.82rem;
-            color: #5c7578;
-            margin-bottom: 0.9rem;
+        .hero-title {
+            margin: 0;
+            max-width: 860px;
+            font-size: 3.3rem;
+            line-height: 0.95;
         }
-        .scoreboard-team {
+        .hero-copy {
+            max-width: 820px;
+            margin-top: 0.9rem;
+            font-size: 1.02rem;
+            line-height: 1.75;
+            color: rgba(245,247,242,0.9);
+        }
+        .section-title {
+            font-size: 2rem;
+            margin: 1.2rem 0 0.2rem 0;
+            color: var(--ink);
+        }
+        .section-copy {
+            color: var(--muted);
+            line-height: 1.65;
+            margin-bottom: 0.85rem;
+        }
+        .card, .metric-card, .chip-card, .match-card, .rank-card, .method-card, .bracket-card, .table-shell, .status-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+        }
+        .metric-card, .chip-card, .method-card, .status-card {
+            padding: 1rem 1.05rem;
+        }
+        .metric-label {
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .metric-value {
+            display: block;
+            margin-top: 0.35rem;
+            font-size: 2.2rem;
+            line-height: 1;
+            color: var(--ink);
+        }
+        .metric-foot {
+            margin-top: 0.25rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .chip-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.18rem;
+        }
+        .chip-copy {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+        .chip-card.is-soft {
+            background: linear-gradient(180deg, #fffdf8 0%, #f7fbf9 100%);
+        }
+        .chip-card.is-warning {
+            background: linear-gradient(180deg, #fffdf8 0%, #f4efe5 100%);
+        }
+        .match-card, .rank-card, .bracket-card {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .match-head, .bracket-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 0.8rem;
-            padding: 0.34rem 0;
-            border-bottom: 1px solid rgba(15, 92, 97, 0.08);
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
+            color: var(--muted);
+            font-size: 0.84rem;
         }
-        .scoreboard-team:last-of-type {
+        .stage-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.22rem 0.6rem;
+            border-radius: 999px;
+            background: var(--teal-100);
+            color: var(--teal-900);
+            font-weight: 700;
+        }
+        .team-line {
+            display: grid;
+            grid-template-columns: 46px 1fr auto;
+            gap: 0.7rem;
+            align-items: center;
+            padding: 0.42rem 0;
+            border-bottom: 1px solid rgba(16,37,31,0.07);
+        }
+        .team-line:last-child {
             border-bottom: none;
         }
-        .scoreboard-team-name {
-            font-size: 0.96rem;
-            font-weight: 600;
-            color: #142f31;
-        }
-        .scoreboard-score {
-            font-size: 1.08rem;
-            font-weight: 700;
-            color: #0b3b3f;
-        }
-        .scoreboard-footer {
-            margin-top: 0.85rem;
-            font-size: 0.82rem;
-            color: #60797c;
-        }
-        .architecture-card h4, .publish-card h4 {
-            margin: 0 0 0.45rem 0;
-            color: #0d383b;
+        .team-badge, .rank-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            background: rgba(24, 113, 94, 0.10);
+            color: var(--teal-900);
+            border: 1px solid rgba(24, 113, 94, 0.18);
             font-size: 1rem;
         }
-        .architecture-card p, .publish-card p {
+        .team-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .match-score {
+            font-size: 1.55rem;
+            color: var(--ink);
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.55rem;
+            margin-top: 0.85rem;
+        }
+        .meta-box {
+            border-radius: var(--radius-sm);
+            background: #eef4f0;
+            padding: 0.45rem 0.55rem;
+        }
+        .meta-key {
+            display: block;
+            color: var(--muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .meta-value {
+            display: block;
+            color: var(--ink);
+            margin-top: 0.12rem;
+            font-weight: 700;
+        }
+        .winner-bar {
+            margin-top: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.3rem 0.7rem;
+            border-radius: 999px;
+            background: var(--teal-100);
+            color: var(--teal-900);
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+        .group-shell {
+            padding: 1.05rem;
+            margin-bottom: 1rem;
+        }
+        .group-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.8rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(16,37,31,0.07);
+        }
+        .group-row:last-child {
+            border-bottom: none;
+        }
+        .group-main {
+            display: flex;
+            gap: 0.7rem;
+            align-items: center;
+        }
+        .group-team {
+            font-weight: 700;
+        }
+        .group-note {
+            color: var(--muted);
+            font-size: 0.86rem;
+            margin-top: 0.05rem;
+        }
+        .group-stats {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(48px, auto));
+            gap: 0.35rem;
+        }
+        .group-stat {
+            background: #eef4f0;
+            border-radius: 12px;
+            padding: 0.34rem 0.38rem;
+            text-align: center;
+        }
+        .fixture-card {
+            border: 1px solid rgba(16,37,31,0.08);
+            border-radius: 16px;
+            background: linear-gradient(180deg, #fffefb 0%, #f7faf8 100%);
+            padding: 0.9rem;
+            margin-bottom: 0.7rem;
+        }
+        .fixture-teams {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .fixture-team {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-width: 0;
+        }
+        .fixture-team.is-away {
+            justify-content: flex-end;
+        }
+        .fixture-score {
+            font-family: "Barlow Condensed", sans-serif;
+            font-size: 1.18rem;
+            color: var(--ink);
+        }
+        .bracket-shell {
+            overflow-x: auto;
+            padding-bottom: 0.4rem;
+        }
+        .bracket-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(240px, 1fr));
+            gap: 1rem;
+            min-width: 1260px;
+        }
+        .bracket-round-title {
+            font-size: 1.45rem;
+            margin: 0 0 0.65rem 0;
+        }
+        .bracket-stack {
+            display: grid;
+            gap: 0.8rem;
+        }
+        .rank-card {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr) auto;
+            gap: 0.8rem;
+            align-items: center;
+        }
+        .rank-main {
+            min-width: 0;
+        }
+        .rank-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .rank-subtitle {
+            color: var(--muted);
+            font-size: 0.86rem;
+            margin-top: 0.08rem;
+        }
+        .rank-value {
+            text-align: right;
+        }
+        .rank-emphasis {
+            font-family: "Barlow Condensed", sans-serif;
+            font-size: 1.6rem;
+            color: var(--ink);
+            line-height: 1;
+        }
+        .rank-caption {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+        .method-card h4 {
+            margin: 0 0 0.32rem 0;
+            font-size: 1.4rem;
+        }
+        .method-card p {
             margin: 0;
-            color: #536e71;
-            line-height: 1.65;
-            font-size: 0.92rem;
+            color: var(--muted);
+            line-height: 1.7;
         }
-        .status-good {
-            color: #0a7e61;
+        .table-shell {
+            padding: 0.9rem 1rem 1rem 1rem;
+            margin-bottom: 1rem;
         }
-        .status-waiting {
-            color: #8f5c19;
-        }
-        .divider-space {
-            height: 0.2rem;
+        @media (max-width: 980px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            .meta-grid, .group-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
         </style>
         """,
@@ -197,333 +521,974 @@ def _inject_styles() -> None:
     )
 
 
-def _load_outputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    return (
-        read_model_leaderboard(SERVING_DIR),
-        read_match_predictions(SERVING_DIR),
-        read_team_summary(SERVING_DIR),
-        read_coverage_summary(SERVING_DIR),
-        read_observed_match_results(SERVING_DIR),
-    )
+def _load_outputs() -> dict[str, pd.DataFrame]:
+    return {
+        "leaderboard": read_model_leaderboard(SERVING_DIR),
+        "predictions": read_match_predictions(SERVING_DIR),
+        "teams": read_team_summary(SERVING_DIR),
+        "coverage": read_coverage_summary(SERVING_DIR),
+        "observed_results": read_observed_match_results(SERVING_DIR),
+        "comparisons": read_match_prediction_vs_actual(SERVING_DIR),
+        "group_forecast": read_group_forecast_summary(SERVING_DIR),
+        "knockout_forecast": read_knockout_forecast_summary(SERVING_DIR),
+        "team_forecast": read_team_forecast_summary(SERVING_DIR),
+        "methodology_status": read_methodology_status(SERVING_DIR),
+        "title_probability": read_title_probability_summary(SERVING_DIR),
+        "top_scorers": read_top_scorer_forecast(SERVING_DIR),
+    }
 
 
-def _render_empty_state(message: str) -> None:
+def _display_team(name: object) -> str:
+    if name is None or pd.isna(name):
+        return "-"
+    return TEAM_NAMES_PT.get(str(name), str(name))
+
+
+def _team_code(name: object) -> str:
+    display_name = _display_team(name)
+    parts = [part for part in display_name.replace("-", " ").split() if part]
+    if not parts:
+        return "---"
+    if len(parts) == 1:
+        return parts[0][:3].upper()
+    return "".join(part[0] for part in parts[:3]).upper()
+
+
+def _stage_label(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    text = str(value)
+    if text.startswith("Group "):
+        return text.replace("Group", "Grupo")
+    return ROUND_LABELS.get(text, text)
+
+
+def _model_label(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    return MODEL_LABELS.get(str(value), str(value))
+
+
+def _publish_status_label(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    return PUBLISH_STATUS_LABELS.get(str(value), str(value).replace("-", " "))
+
+
+def _format_date(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    return pd.to_datetime(value).strftime("%d/%m/%Y")
+
+
+def _format_number(value: object, decimals: int = 1) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    number = float(value)
+    if decimals == 0 or number.is_integer():
+        return str(int(round(number)))
+    return f"{number:.{decimals}f}"
+
+
+def _format_pct(value: object, decimals: int = 0) -> str:
+    if value is None or pd.isna(value):
+        return "-"
+    return f"{float(value):.{decimals}f}%"
+
+
+def _html(markup: str) -> None:
+    st.markdown(dedent(markup).strip(), unsafe_allow_html=True)
+
+
+def _empty(message: str) -> None:
     st.info(message)
 
 
-def _render_dataframe(frame: pd.DataFrame, empty_message: str) -> None:
-    if frame.empty:
-        _render_empty_state(empty_message)
-        return
-    st.dataframe(frame, use_container_width=True, hide_index=True)
+def _winner_from_scores(home_team: object, away_team: object, home_score: object, away_score: object) -> str:
+    if home_score is None or away_score is None or pd.isna(home_score) or pd.isna(away_score):
+        return "-"
+    if float(home_score) > float(away_score):
+        return _display_team(home_team)
+    if float(away_score) > float(home_score):
+        return _display_team(away_team)
+    return "Empate"
 
 
-def _count_observed_matches(observed_results: pd.DataFrame) -> int:
-    if observed_results.empty:
-        return 0
-    if "match_id" in observed_results.columns:
-        return int(observed_results["match_id"].nunique())
-    return len(observed_results)
-
-
-def _coverage_rows(coverage: pd.DataFrame) -> list[dict]:
+def _coverage_cards(coverage: pd.DataFrame, methodology_status: pd.DataFrame) -> None:
     if coverage.empty:
-        return []
-    return coverage.to_dict("records")
-
-
-def _recent_matches(observed_results: pd.DataFrame, limit: int = 6) -> pd.DataFrame:
-    if observed_results.empty:
-        return observed_results
-    return observed_results.sort_values(
-        ["match_date", "match_id"], ascending=[False, False]
-    ).head(limit)
-
-
-def _top_teams(teams: pd.DataFrame, limit: int = 6) -> pd.DataFrame:
-    if teams.empty:
-        return teams
-    return teams.head(limit)
-
-
-def _render_coverage_chips(coverage: pd.DataFrame) -> None:
-    rows = _coverage_rows(coverage)
-    if not rows:
         return
-
-    html_parts = ['<div class="chip-row">']
-    for row in rows:
-        metric_name = escape(str(row.get("metric_name", "unknown")).title())
-        coverage_pct = float(row.get("coverage_pct", 0.0))
-        covered_matches = int(row.get("covered_matches", 0))
-        total_matches = int(row.get("total_matches", 0))
-        chip_class = "coverage-chip is-live" if bool(row.get("has_truth")) else "coverage-chip is-missing"
-        html_parts.append(
-            f"""
-            <div class="{chip_class}">
-              <strong>{metric_name}</strong>
-              <span>{coverage_pct:.0f}% coverage · {covered_matches}/{total_matches} matches</span>
-            </div>
-            """
-        )
-    html_parts.append("</div>")
-    st.markdown("".join(html_parts), unsafe_allow_html=True)
+    status_lookup = {}
+    if not methodology_status.empty:
+        status_lookup = methodology_status.set_index("metric_name")["publish_status"].to_dict()
+    columns = st.columns(len(coverage.index))
+    for column, row in zip(columns, coverage.to_dict("records")):
+        css_class = "chip-card is-soft" if bool(row.get("has_truth")) else "chip-card is-warning"
+        with column:
+            _html(
+                f"""
+                <div class="{css_class}">
+                  <div class="chip-title">{escape(_model_label(row.get("metric_name")))}</div>
+                  <div class="chip-copy">{escape(_format_pct(row.get("coverage_pct"), 0))} de cobertura em {int(float(row.get("covered_matches", 0)))}/{int(float(row.get("total_matches", 0)))} partidas</div>
+                  <div class="chip-copy">{escape(_publish_status_label(status_lookup.get(str(row.get("metric_name")), "coverage-only")))}</div>
+                </div>
+                """
+            )
 
 
-def _render_scoreboard_cards(observed_results: pd.DataFrame) -> None:
-    st.markdown("### Recent Observed Matches")
-    st.caption("Tournament status comes first: these are the latest completed matches in the current public truth layer.")
-    if observed_results.empty:
-        _render_empty_state(
-            "No recent observed matches are available yet. The scoreboard cards appear as soon as completed matches enter the real-data truth layer."
-        )
-        return
-
-    html_parts = ['<div class="scoreboard-grid">']
-    for row in _recent_matches(observed_results).to_dict("records"):
-        home_team = escape(str(row.get("home_team", "")))
-        away_team = escape(str(row.get("away_team", "")))
-        stage = escape(str(row.get("stage", "Unknown stage")))
-        match_date = escape(str(row.get("match_date", "")))
-        status = escape(str(row.get("status", "Final")))
-        source = escape(str(row.get("source", "source")))
-        home_goals = escape(str(row.get("home_goals", "")))
-        away_goals = escape(str(row.get("away_goals", "")))
-        shots_footer = ""
-        if row.get("home_shots") == row.get("home_shots") and row.get("away_shots") == row.get("away_shots"):
-            shots_footer = f"Shots: {int(row['home_shots'])}-{int(row['away_shots'])}"
-        footer_text = f"{source.upper()} truth"
-        if shots_footer:
-            footer_text = f"{footer_text} · {shots_footer}"
-        html_parts.append(
-            f"""
-            <div class="scoreboard-card">
-              <div class="scoreboard-topline">{stage}</div>
-              <div class="scoreboard-status">{match_date} · {status}</div>
-              <div class="scoreboard-team">
-                <span class="scoreboard-team-name">{home_team}</span>
-                <span class="scoreboard-score">{home_goals}</span>
-              </div>
-              <div class="scoreboard-team">
-                <span class="scoreboard-team-name">{away_team}</span>
-                <span class="scoreboard-score">{away_goals}</span>
-              </div>
-              <div class="scoreboard-footer">{footer_text}</div>
-            </div>
-            """
-        )
-    html_parts.append("</div>")
-    st.markdown("".join(html_parts), unsafe_allow_html=True)
+def _metric_strip(items: list[dict[str, str]]) -> None:
+    columns = st.columns(len(items))
+    for column, item in zip(columns, items):
+        with column:
+            _html(
+                f"""
+                <div class="metric-card">
+                  <div class="metric-label">{escape(item["label"])}</div>
+                  <span class="metric-value">{escape(item["value"])}</span>
+                  <div class="metric-foot">{escape(item["foot"])}</div>
+                </div>
+                """
+            )
 
 
-def _render_methodology_cards() -> None:
-    st.markdown("### What This Lab Is")
-    st.caption("A dedicated methodology layer explains what is real today, what is still missing, and how the platform evaluates the tournament.")
-    st.markdown(
-        """
-        <div class="architecture-grid">
-          <div class="architecture-card">
-            <h4>Truth Layer</h4>
-            <p>Completed match truth is the foundation. The public app only surfaces tournament outcomes that have already happened and can be tied to a real observed source.</p>
+def _match_card(row: dict, actual_mode: bool) -> str:
+    home_goals = row.get("actual_home_goals") if actual_mode else row.get("predicted_home_goals", row.get("home_goals"))
+    away_goals = row.get("actual_away_goals") if actual_mode else row.get("predicted_away_goals", row.get("away_goals"))
+    home_shots = row.get("actual_home_shots") if actual_mode else row.get("predicted_home_shots", row.get("home_shots"))
+    away_shots = row.get("actual_away_shots") if actual_mode else row.get("predicted_away_shots", row.get("away_shots"))
+    home_cards = row.get("actual_home_cards") if actual_mode else row.get("predicted_home_cards", row.get("home_cards"))
+    away_cards = row.get("actual_away_cards") if actual_mode else row.get("predicted_away_cards", row.get("away_cards"))
+    home_fouls = row.get("actual_home_fouls") if actual_mode else row.get("predicted_home_fouls", row.get("home_fouls"))
+    away_fouls = row.get("actual_away_fouls") if actual_mode else row.get("predicted_away_fouls", row.get("away_fouls"))
+    winner = (
+        row.get("actual_winner")
+        if actual_mode and row.get("actual_winner") is not None
+        else row.get("predicted_winner")
+    )
+    if not winner or pd.isna(winner):
+        winner = _winner_from_scores(row.get("home_team"), row.get("away_team"), home_goals, away_goals)
+    return f"""
+        <div class="match-card">
+          <div class="match-head">
+            <span class="stage-pill">{escape(_stage_label(row.get("stage")))}</span>
+            <span>{escape(_format_date(row.get("match_date")))}</span>
           </div>
-          <div class="architecture-card">
-            <h4>Source Fallback</h4>
-            <p>FIFA remains the preferred source when accessible. In this local environment, a public ESPN fallback keeps the serving snapshot populated with real observed tournament results.</p>
+          <div class="team-line">
+            <span class="team-badge">{escape(_team_code(row.get("home_team")))}</span>
+            <span class="team-name">{escape(_display_team(row.get("home_team")))}</span>
+            <span class="match-score">{escape(_format_number(home_goals, 1))}</span>
           </div>
-          <div class="architecture-card">
-            <h4>Coverage Policy</h4>
-            <p>Coverage is explicit per target. Goals and shots can be published when observed, while cards remain intentionally unavailable until the source layer supports them honestly.</p>
+          <div class="team-line">
+            <span class="team-badge">{escape(_team_code(row.get("away_team")))}</span>
+            <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
+            <span class="match-score">{escape(_format_number(away_goals, 1))}</span>
           </div>
-          <div class="architecture-card">
-            <h4>Model Logic</h4>
-            <p>The forecasting lab separates truth ingestion, serving outputs, and evaluation. Public-facing comparisons stay empty until enough observed match truth exists to support them fairly.</p>
+          <div class="meta-grid">
+            <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(home_shots, 1))} x {escape(_format_number(away_shots, 1))}</span></div>
+            <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(home_fouls, 1))} x {escape(_format_number(away_fouls, 1))}</span></div>
+            <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(home_cards, 1))} x {escape(_format_number(away_cards, 1))}</span></div>
+            <div class="meta-box"><span class="meta-key">Fonte</span><span class="meta-value">{escape("Real" if actual_mode else _model_label(row.get("model_name", "hybrid-prior")))}</span></div>
           </div>
+          <div class="winner-bar">{escape("Resultado final" if actual_mode else "Cenário do modelo")}: {escape(_display_team(winner))}</div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """
 
 
-def _render_publishability_status(leaderboard: pd.DataFrame, predictions: pd.DataFrame) -> None:
-    st.markdown("### Publishability Status")
-    leaderboard_ready = not leaderboard.empty
-    predictions_ready = not predictions.empty
-    st.markdown(
-        f"""
-        <div class="publish-grid">
-          <div class="publish-card">
-            <h4>Model Leaderboard</h4>
-            <p class="{'status-good' if leaderboard_ready else 'status-waiting'}">
-              {'Ready for public comparison with real truth coverage.' if leaderboard_ready else 'Waiting for enough observed match truth to support a fair public model ranking.'}
-            </p>
-          </div>
-          <div class="publish-card">
-            <h4>Forecast Publishing</h4>
-            <p class="{'status-good' if predictions_ready else 'status-waiting'}">
-              {'Forecast rows are currently publishable with coverage context.' if predictions_ready else 'Forecast rows stay unpublished until they can be paired with truthful tournament coverage and validation context.'}
-            </p>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _render_top_teams_snapshot(teams: pd.DataFrame) -> None:
-    st.markdown("### Top Teams Snapshot")
-    st.caption("A compact standings-style readout from the observed results already loaded into the serving layer.")
-    if teams.empty:
-        _render_empty_state(
-            "No top-team snapshot is available yet because the observed match layer has not produced enough team-level results."
-        )
+def _render_match_grid(frame: pd.DataFrame, actual_mode: bool, limit: int | None = None, empty_message: str = "Sem partidas para este recorte.") -> None:
+    if frame.empty:
+        _empty(empty_message)
         return
-    _render_dataframe(
-        _top_teams(teams)[["team", "matches_played", "points", "goal_difference", "goals_for", "shots_for"]],
-        "Top-team snapshot is not available yet.",
+    rows = frame.to_dict("records")
+    if limit is not None:
+        rows = rows[:limit]
+    for start in range(0, len(rows), 3):
+        chunk = rows[start : start + 3]
+        columns = st.columns(len(chunk))
+        for column, row in zip(columns, chunk):
+            with column:
+                _html(_match_card(row, actual_mode=actual_mode))
+
+
+def _prepare_table(frame: pd.DataFrame, column_map: dict[str, str], transforms: dict[str, callable]) -> pd.DataFrame:
+    if frame.empty:
+        return frame.copy()
+    prepared = frame.copy()
+    for column, transform in transforms.items():
+        if column in prepared.columns:
+            prepared[column] = prepared[column].map(transform)
+    ordered = [column for column in column_map if column in prepared.columns]
+    return prepared[ordered].rename(columns={column: column_map[column] for column in ordered})
+
+
+def _render_table(frame: pd.DataFrame, column_map: dict[str, str], transforms: dict[str, callable], empty_message: str) -> None:
+    if frame.empty:
+        _empty(empty_message)
+        return
+    st.dataframe(
+        _prepare_table(frame, column_map=column_map, transforms=transforms),
+        use_container_width=True,
+        hide_index=True,
     )
 
 
-def _render_home(
-    leaderboard: pd.DataFrame,
-    predictions: pd.DataFrame,
-    teams: pd.DataFrame,
-    coverage: pd.DataFrame,
-    observed_results: pd.DataFrame,
-) -> None:
-    st.markdown(
+def _build_group_tables(observed_results: pd.DataFrame, predictions: pd.DataFrame) -> tuple[dict[str, pd.DataFrame], dict[str, pd.DataFrame]]:
+    future_groups = predictions.loc[
+        predictions["is_future_fixture"].fillna(False)
+        & predictions["stage"].astype(str).str.startswith("Group ")
+    ].copy()
+    rows: list[dict] = []
+    for match in observed_results.to_dict("records"):
+        if not str(match["stage"]).startswith("Group "):
+            continue
+        rows.extend(
+            [
+                _group_row(match["stage"], match["home_team"], match["home_goals"], match["away_goals"]),
+                _group_row(match["stage"], match["away_team"], match["away_goals"], match["home_goals"]),
+            ]
+        )
+    for match in future_groups.to_dict("records"):
+        rows.extend(
+            [
+                _group_row(match["stage"], match["home_team"], match["predicted_home_goals"], match["predicted_away_goals"]),
+                _group_row(match["stage"], match["away_team"], match["predicted_away_goals"], match["predicted_home_goals"]),
+            ]
+        )
+
+    group_tables: dict[str, pd.DataFrame] = {}
+    if rows:
+        summary = pd.DataFrame(rows).groupby(["group_stage", "team"], as_index=False).sum(numeric_only=True)
+        summary["saldo"] = summary["gp"] - summary["gc"]
+        summary = summary.sort_values(
+            ["group_stage", "pts", "saldo", "gp", "team"],
+            ascending=[True, False, False, False, True],
+            kind="stable",
+        )
+        for group_stage, frame in summary.groupby("group_stage", sort=True):
+            ordered = frame.reset_index(drop=True).copy()
+            ordered["pos"] = range(1, len(ordered) + 1)
+            group_tables[str(group_stage)] = ordered
+
+    fixture_tables: dict[str, pd.DataFrame] = {}
+    if not future_groups.empty:
+        for group_stage, frame in future_groups.groupby("stage", sort=True):
+            fixture_tables[str(group_stage)] = frame.sort_values(["match_date", "match_id"], kind="stable").reset_index(drop=True)
+    return group_tables, fixture_tables
+
+
+def _group_row(stage: object, team: object, goals_for: object, goals_against: object) -> dict:
+    scored = float(goals_for or 0.0)
+    conceded = float(goals_against or 0.0)
+    return {
+        "group_stage": str(stage),
+        "team": str(team),
+        "j": 1,
+        "v": 1 if scored > conceded else 0,
+        "e": 1 if scored == conceded else 0,
+        "d": 1 if scored < conceded else 0,
+        "gp": scored,
+        "gc": conceded,
+        "pts": 3 if scored > conceded else 1 if scored == conceded else 0,
+    }
+
+
+def _render_groups(observed_results: pd.DataFrame, predictions: pd.DataFrame) -> None:
+    group_tables, fixture_tables = _build_group_tables(observed_results, predictions)
+    if not group_tables:
+        _empty("Ainda não há grupos suficientes para montar a leitura de torneio.")
+        return
+
+    for group_stage in sorted(group_tables):
+        standings = group_tables[group_stage]
+        fixtures = fixture_tables.get(group_stage, pd.DataFrame())
+        left, right = st.columns([1.45, 1.05], gap="large")
+        with left:
+            rows_markup = []
+            for row in standings.to_dict("records"):
+                rows_markup.append(
+                    f"""
+                    <div class="group-row">
+                      <div class="group-main">
+                        <span class="rank-number">{int(row["pos"])}</span>
+                        <div>
+                          <div class="group-team">{escape(_display_team(row["team"]))}</div>
+                          <div class="group-note">{int(row["pts"])} pts | {escape(_format_number(row["gp"], 0))} gols | saldo {escape(_format_number(row["saldo"], 0))}</div>
+                        </div>
+                      </div>
+                      <div class="group-stats">
+                        <div class="group-stat"><span class="meta-key">P</span><span class="meta-value">{int(row["pts"])}</span></div>
+                        <div class="group-stat"><span class="meta-key">J</span><span class="meta-value">{int(row["j"])}</span></div>
+                        <div class="group-stat"><span class="meta-key">V</span><span class="meta-value">{int(row["v"])}</span></div>
+                        <div class="group-stat"><span class="meta-key">GP</span><span class="meta-value">{escape(_format_number(row["gp"], 0))}</span></div>
+                        <div class="group-stat"><span class="meta-key">SG</span><span class="meta-value">{escape(_format_number(row["saldo"], 0))}</span></div>
+                      </div>
+                    </div>
+                    """
+                )
+            _html(
+                f"""
+                <div class="group-shell card">
+                  <div class="section-title" style="margin-top:0;">{escape(_stage_label(group_stage))}</div>
+                  <div class="section-copy">Leitura do grupo consolidando o que já aconteceu com o que o modelo projeta para a rodada final.</div>
+                  {''.join(rows_markup)}
+                </div>
+                """
+            )
+        with right:
+            fixtures_markup = []
+            if fixtures.empty:
+                fixtures_markup.append(
+                    """
+                    <div class="fixture-card">
+                      <div class="section-copy" style="margin-bottom:0;">Grupo já fechado. Não há partidas restantes neste recorte.</div>
+                    </div>
+                    """
+                )
+            else:
+                for row in fixtures.to_dict("records"):
+                    fixtures_markup.append(
+                        f"""
+                        <div class="fixture-card">
+                          <div class="match-head">
+                            <span class="stage-pill">{escape(_format_date(row.get("match_date")))}</span>
+                            <span>placar projetado</span>
+                          </div>
+                          <div class="fixture-teams">
+                            <div class="fixture-team">
+                              <span class="team-badge">{escape(_team_code(row.get("home_team")))}</span>
+                              <span class="team-name">{escape(_display_team(row.get("home_team")))}</span>
+                            </div>
+                            <span class="fixture-score">{escape(_format_number(row.get("predicted_home_goals"), 1))} x {escape(_format_number(row.get("predicted_away_goals"), 1))}</span>
+                            <div class="fixture-team is-away">
+                              <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
+                              <span class="team-badge">{escape(_team_code(row.get("away_team")))}</span>
+                            </div>
+                          </div>
+                          <div class="winner-bar">Mais provável: {escape(_display_team(row.get("predicted_winner")))}</div>
+                        </div>
+                        """
+                    )
+            _html(
+                f"""
+                <div class="group-shell card">
+                  <div class="section-title" style="margin-top:0;">Rodada decisiva</div>
+                  <div class="section-copy">Jogos restantes do grupo em formato de confronto, não apenas em tabela.</div>
+                  {''.join(fixtures_markup)}
+                </div>
+                """
+            )
+
+
+def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
+    if knockout_forecast.empty:
+        _empty("O caminho do mata-mata ainda não está disponível neste snapshot.")
+        return
+
+    rounds = {}
+    ordered = knockout_forecast.copy()
+    ordered["round_order"] = ordered["stage"].map({name: index for index, name in enumerate(ROUND_ORDER)}).fillna(999)
+    ordered = ordered.sort_values(["round_order", "match_date", "match_id"], kind="stable")
+    for round_name, frame in ordered.groupby("stage", sort=False):
+        rounds[str(round_name)] = frame.reset_index(drop=True)
+
+    round_names = [round_name for round_name in ROUND_ORDER if round_name in rounds][:5]
+    columns = st.columns(len(round_names), gap="medium")
+    for column, round_name in zip(columns, round_names):
+        with column:
+            cards = []
+            for row in rounds[round_name].to_dict("records"):
+                cards.append(
+                    f"""
+                    <div class="bracket-card">
+                      <div class="bracket-head">
+                        <span class="stage-pill">{escape(_format_date(row.get("match_date")))}</span>
+                        <span>{escape(_display_team(row.get("predicted_winner")))}</span>
+                      </div>
+                      <div class="team-line">
+                        <span class="team-badge">{escape(_team_code(row.get("home_team")))}</span>
+                        <span class="team-name">{escape(_display_team(row.get("home_team")))}</span>
+                        <span class="match-score">{escape(_format_number(row.get("predicted_home_goals"), 1))}</span>
+                      </div>
+                      <div class="team-line">
+                        <span class="team-badge">{escape(_team_code(row.get("away_team")))}</span>
+                        <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
+                        <span class="match-score">{escape(_format_number(row.get("predicted_away_goals"), 1))}</span>
+                      </div>
+                      <div class="meta-grid">
+                        <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_shots"), 1))} x {escape(_format_number(row.get("predicted_away_shots"), 1))}</span></div>
+                        <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_fouls"), 1))} x {escape(_format_number(row.get("predicted_away_fouls"), 1))}</span></div>
+                        <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_cards"), 1))} x {escape(_format_number(row.get("predicted_away_cards"), 1))}</span></div>
+                        <div class="meta-box"><span class="meta-key">Modelo</span><span class="meta-value">{escape(_model_label(row.get("model_name")))}</span></div>
+                      </div>
+                    </div>
+                    """
+                )
+            _html(
+                f"""
+                <div class="table-shell">
+                  <div class="bracket-round-title">{escape(_stage_label(round_name))}</div>
+                  <div class="section-copy">Caminho projetado da chave nesta etapa.</div>
+                  <div class="bracket-stack">
+                    {''.join(cards)}
+                  </div>
+                </div>
+                """
+            )
+
+
+def _render_rank_cards(frame: pd.DataFrame, title_column: str, subtitle_builder: callable, value_builder: callable, limit: int = 10, empty_message: str = "Sem dados para este ranking.") -> None:
+    if frame.empty:
+        _empty(empty_message)
+        return
+    rows = frame.head(limit).to_dict("records")
+    for start in range(0, len(rows), 2):
+        chunk = rows[start : start + 2]
+        columns = st.columns(len(chunk))
+        for idx, (column, row) in enumerate(zip(columns, chunk), start=start + 1):
+            with column:
+                _html(
+                    f"""
+                    <div class="rank-card">
+                      <span class="rank-number">{idx}</span>
+                      <div class="rank-main">
+                        <div class="rank-title">{escape(title_column(row))}</div>
+                        <div class="rank-subtitle">{escape(subtitle_builder(row))}</div>
+                      </div>
+                      <div class="rank-value">
+                        <div class="rank-emphasis">{escape(value_builder(row))}</div>
+                      </div>
+                    </div>
+                    """
+                )
+
+
+def _render_home(outputs: dict[str, pd.DataFrame]) -> None:
+    predictions = outputs["predictions"]
+    observed_results = outputs["observed_results"]
+    coverage = outputs["coverage"]
+    methodology_status = outputs["methodology_status"]
+    title_probability = outputs["title_probability"]
+    top_scorers = outputs["top_scorers"]
+
+    future_predictions = predictions.loc[predictions["is_future_fixture"].fillna(False)].copy()
+    observed_matches = observed_results.sort_values(["match_date", "match_id"], ascending=[False, False], kind="stable")
+    future_matches = future_predictions.sort_values(["match_date", "match_id"], kind="stable")
+
+    _html(
         """
         <div class="hero-shell">
-          <div class="hero-kicker">Tournament Status</div>
-          <h1 class="hero-title">Real-time tournament intelligence built on observed World Cup truth.</h1>
-          <p class="hero-subtitle">
-            This home page acts as the executive front door of the lab: first the tournament status that is already real,
-            then the methodology that explains what the platform can validate today and what still remains intentionally missing.
-          </p>
+          <div class="kicker">Laboratório de forecast da Copa 2026</div>
+          <h1 class="hero-title">Status do torneio primeiro, metodologia visível logo abaixo e previsões públicas pensadas como produto analítico.</h1>
+          <div class="hero-copy">
+            Esta home resume a Copa em uma leitura executiva: o que já aconteceu, o que o modelo híbrido projeta para os próximos jogos, quais seleções aparecem melhor posicionadas no caminho do título e como a camada de engenharia sustenta tudo isso com dados observados, sinais pré-jogo e contexto de elenco.
+          </div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Observed Matches", _count_observed_matches(observed_results))
-    col2.metric("Coverage Metrics", len(coverage))
-    col3.metric("Leaderboard Rows", len(leaderboard))
-    col4.metric("Forecasted Matches", len(predictions))
-    col5.metric("Teams Profiled", len(teams))
+    _metric_strip(
+        [
+            {
+                "label": "Partidas observadas",
+                "value": str(int(observed_results["match_id"].nunique()) if not observed_results.empty else 0),
+                "foot": "Jogos com resultado real já encerrado.",
+            },
+            {
+                "label": "Forecasts restantes",
+                "value": str(int(future_predictions["match_id"].nunique()) if not future_predictions.empty else 0),
+                "foot": "Confrontos ainda abertos no torneio.",
+            },
+            {
+                "label": "Seleções modeladas",
+                "value": str(int(pd.concat([observed_results[["home_team", "away_team"]], future_predictions[["home_team", "away_team"]]], ignore_index=True).stack().nunique()) if (not observed_results.empty or not future_predictions.empty) else 0),
+                "foot": "Escopo total do snapshot público.",
+            },
+            {
+                "label": "Prontidão analítica",
+                "value": "alta" if not coverage.empty else "baixa",
+                "foot": "Cobertura real para gols, chutes e faltas.",
+            },
+        ]
+    )
 
-    _render_coverage_chips(coverage)
-    _render_scoreboard_cards(observed_results)
-    _render_methodology_cards()
-    _render_top_teams_snapshot(teams)
-    _render_publishability_status(leaderboard, predictions)
+    st.markdown("## Cobertura de métricas")
+    st.caption("Gols, chutes, faltas e cartões aparecem com linguagem humana, sem expor nomes crus de variáveis.")
+    _coverage_cards(coverage, methodology_status)
 
-    st.markdown("### Detailed Observed Match Table")
-    st.caption("For scanability, the full observed truth layer remains available below after the visual tournament summary.")
-    if not observed_results.empty:
-        _render_dataframe(
-            observed_results,
-            "Observed match truth is expected here when completed matches have been collected.",
+    st.markdown("## Partidas observadas mais recentes")
+    st.caption("Leitura de placar em formato de card, incluindo chutes e disciplina por jogo.")
+    _render_match_grid(observed_matches, actual_mode=True, limit=6, empty_message="Ainda não há jogos encerrados para este panorama.")
+
+    st.markdown("## Próximos jogos com cenário de modelo")
+    st.caption("O forecast agora nasce com um sinal híbrido pré-jogo + forma observada, e não apenas com média do que já aconteceu no torneio.")
+    _render_match_grid(future_matches, actual_mode=False, limit=6, empty_message="Não há confrontos futuros publicados nesta base.")
+
+    st.markdown("## Próximos passos mais prováveis do torneio")
+    left, right = st.columns(2, gap="large")
+    with left:
+        _render_rank_cards(
+            title_probability,
+            title_column=lambda row: _display_team(row.get("team")),
+            subtitle_builder=lambda row: f"força { _format_number(row.get('strength_rating'), 1) } | pontos projetados { _format_number(row.get('projected_total_points'), 1) }",
+            value_builder=lambda row: _format_pct(row.get("title_probability_pct"), 1),
+            limit=6,
+            empty_message="Sem distribuição pública de título neste snapshot.",
         )
-    else:
-        _render_empty_state(
-            "No real observed match truth is available yet. Run the serving pipeline after "
-            "completed matches are ingested so the public app stays real-data-only."
+    with right:
+        _render_rank_cards(
+            top_scorers,
+            title_column=lambda row: row.get("player_name", "-"),
+            subtitle_builder=lambda row: f"{_display_team(row.get('team'))} | {row.get('position', '-')}",
+            value_builder=lambda row: _format_number(row.get("projected_total_goals"), 1),
+            limit=6,
+            empty_message="Sem ranking público de artilharia nesta execução.",
         )
 
-    if coverage.empty:
-        _render_empty_state(
-            "Coverage Summary is not available yet. Run the serving pipeline with real observed "
-            "match truth so the app can explain what has been validated."
-        )
+    st.markdown("## O que este laboratório faz")
+    st.caption("A metodologia precisa estar visível na home, não escondida só na aba técnica.")
+    method_columns = st.columns(4)
+    method_cards = [
+        (
+            "Camada de verdade",
+            "Resultados encerrados entram como observados. A aba de precisão compara previsão e realidade jogo a jogo.",
+        ),
+        (
+            "Priors pré-jogo",
+            "Cada seleção recebe um sinal híbrido com força prévia, contexto de elenco público, forma capturada no torneio e histórico recente de jogadores.",
+        ),
+        (
+            "Stack de fontes",
+            "ESPN sustenta placar e roster público, API-Football adiciona histórico recente de jogadores e a camada de serving preserva a origem de cada leitura.",
+        ),
+        (
+            "Produto publicável",
+            "Além do placar, o app expõe grupos, mata-mata, artilharia, título e metodologia em linguagem de negócio.",
+        ),
+    ]
+    for column, (title, body) in zip(method_columns, method_cards):
+        with column:
+            _html(
+                f"""
+                <div class="method-card">
+                  <h4>{escape(title)}</h4>
+                  <p>{escape(body)}</p>
+                </div>
+                """
+            )
 
 
-def _render_model_leaderboard(leaderboard: pd.DataFrame) -> None:
-    st.subheader("Model Leaderboard")
-    st.write("Track model-level evaluation outputs backed by real observed match truth.")
-    _render_dataframe(
+def _render_predictions_tab(predictions: pd.DataFrame) -> None:
+    future = predictions.loc[predictions["is_future_fixture"].fillna(False)].copy()
+    st.markdown("## Cenários por jogo")
+    st.caption("A aba central do produto: cenário provável por partida, com filtros por fase e seleção.")
+    if future.empty:
+        _empty("Ainda não há partidas futuras publicadas para esta aba.")
+        return
+
+    phases = ["Todas"] + sorted({_stage_label(value) for value in future["stage"].dropna().tolist()})
+    teams = ["Todas"] + sorted({_display_team(value) for value in pd.concat([future["home_team"], future["away_team"]]).dropna().tolist()})
+    filter_col_a, filter_col_b = st.columns(2)
+    with filter_col_a:
+        selected_phase = st.selectbox("Fase", phases, index=0)
+    with filter_col_b:
+        selected_team = st.selectbox("Seleção", teams, index=0)
+
+    filtered = future.copy()
+    if selected_phase != "Todas":
+        filtered = filtered.loc[filtered["stage"].map(_stage_label) == selected_phase]
+    if selected_team != "Todas":
+        filtered = filtered.loc[
+            (filtered["home_team"].map(_display_team) == selected_team)
+            | (filtered["away_team"].map(_display_team) == selected_team)
+        ]
+    filtered = filtered.sort_values(["match_date", "match_id"], kind="stable")
+
+    _render_match_grid(filtered, actual_mode=False, limit=9, empty_message="Nenhum jogo futuro atende aos filtros atuais.")
+
+    st.markdown("### Explorer detalhado")
+    _render_table(
+        filtered,
+        column_map={
+            "match_date": "Dia do jogo",
+            "stage": "Fase",
+            "home_team": "Mandante",
+            "away_team": "Visitante",
+            "predicted_home_goals": "Gols mandante",
+            "predicted_away_goals": "Gols visitante",
+            "predicted_home_shots": "Chutes mandante",
+            "predicted_away_shots": "Chutes visitante",
+            "predicted_home_fouls": "Faltas mandante",
+            "predicted_away_fouls": "Faltas visitante",
+            "predicted_home_cards": "Cartões mandante",
+            "predicted_away_cards": "Cartões visitante",
+            "predicted_winner": "Cenário mais provável",
+        },
+        transforms={
+            "match_date": _format_date,
+            "stage": _stage_label,
+            "home_team": _display_team,
+            "away_team": _display_team,
+            "predicted_home_goals": lambda value: _format_number(value, 1),
+            "predicted_away_goals": lambda value: _format_number(value, 1),
+            "predicted_home_shots": lambda value: _format_number(value, 1),
+            "predicted_away_shots": lambda value: _format_number(value, 1),
+            "predicted_home_fouls": lambda value: _format_number(value, 1),
+            "predicted_away_fouls": lambda value: _format_number(value, 1),
+            "predicted_home_cards": lambda value: _format_number(value, 1),
+            "predicted_away_cards": lambda value: _format_number(value, 1),
+            "predicted_winner": _display_team,
+        },
+        empty_message="Sem jogos futuros para detalhar.",
+    )
+
+
+def _render_accuracy_tab(comparisons: pd.DataFrame, leaderboard: pd.DataFrame) -> None:
+    st.markdown("## Precisão até agora")
+    st.caption("Só entra aqui o que já foi jogado. Nada de misturar cenário futuro com validação real.")
+    total_games = int(comparisons["match_id"].nunique()) if not comparisons.empty else 0
+    winner_hit_rate = float(comparisons["winner_hit"].mean() * 100.0) if not comparisons.empty else 0.0
+    goals_mae = float(leaderboard.loc[leaderboard["target_name"] == "goals_for", "mae"].head(1).fillna(0.0).iloc[0]) if not leaderboard.empty and (leaderboard["target_name"] == "goals_for").any() else 0.0
+    fouls_mae = float(leaderboard.loc[leaderboard["target_name"] == "fouls_for", "mae"].head(1).fillna(0.0).iloc[0]) if not leaderboard.empty and (leaderboard["target_name"] == "fouls_for").any() else 0.0
+    _metric_strip(
+        [
+            {"label": "Jogos avaliados", "value": str(total_games), "foot": "Base pública usada na comparação."},
+            {"label": "Acerto do vencedor", "value": _format_pct(winner_hit_rate, 0), "foot": "Taxa de acerto do cenário vencedor."},
+            {"label": "MAE de gols", "value": _format_number(goals_mae, 2), "foot": "Erro médio absoluto por lado."},
+            {"label": "MAE de faltas", "value": _format_number(fouls_mae, 2), "foot": "Disciplina de jogo validada com verdade observada."},
+        ]
+    )
+
+    ordered = comparisons.sort_values(["match_date", "match_id"], ascending=[False, False], kind="stable")
+    _render_match_grid(ordered, actual_mode=True, limit=6, empty_message="Ainda não há partidas suficientes para medir precisão.")
+
+    st.markdown("### Leaderboard por estatística")
+    _render_table(
         leaderboard,
-        "No leaderboard is published yet because there is not enough real observed match truth "
-        "to support a public comparison.",
+        column_map={
+            "model_name": "Modelo",
+            "target_name": "Estatística",
+            "observations": "Observações",
+            "exact_hit_rate": "Acerto exato",
+            "mae": "MAE",
+            "rmse": "RMSE",
+            "bias": "Bias",
+        },
+        transforms={
+            "model_name": _model_label,
+            "target_name": _model_label,
+            "exact_hit_rate": lambda value: _format_pct(float(value) * 100.0, 1),
+            "mae": lambda value: _format_number(value, 2),
+            "rmse": lambda value: _format_number(value, 2),
+            "bias": lambda value: _format_number(value, 2),
+        },
+        empty_message="O leaderboard ainda não tem observações suficientes.",
+    )
+
+    st.markdown("### Comparação jogo a jogo")
+    _render_table(
+        ordered,
+        column_map={
+            "match_date": "Dia do jogo",
+            "stage": "Fase",
+            "home_team": "Mandante",
+            "away_team": "Visitante",
+            "predicted_home_goals": "Prev. gols M",
+            "actual_home_goals": "Real gols M",
+            "predicted_away_goals": "Prev. gols V",
+            "actual_away_goals": "Real gols V",
+            "predicted_home_fouls": "Prev. faltas M",
+            "actual_home_fouls": "Real faltas M",
+            "predicted_away_fouls": "Prev. faltas V",
+            "actual_away_fouls": "Real faltas V",
+            "predicted_winner": "Prev. vencedor",
+            "actual_winner": "Vencedor real",
+            "winner_hit": "Acertou",
+        },
+        transforms={
+            "match_date": _format_date,
+            "stage": _stage_label,
+            "home_team": _display_team,
+            "away_team": _display_team,
+            "predicted_home_goals": lambda value: _format_number(value, 1),
+            "actual_home_goals": lambda value: _format_number(value, 0),
+            "predicted_away_goals": lambda value: _format_number(value, 1),
+            "actual_away_goals": lambda value: _format_number(value, 0),
+            "predicted_home_fouls": lambda value: _format_number(value, 1),
+            "actual_home_fouls": lambda value: _format_number(value, 0),
+            "predicted_away_fouls": lambda value: _format_number(value, 1),
+            "actual_away_fouls": lambda value: _format_number(value, 0),
+            "predicted_winner": _display_team,
+            "actual_winner": _display_team,
+            "winner_hit": lambda value: "Sim" if float(value) >= 1.0 else "Não",
+        },
+        empty_message="Ainda não há partidas validadas nesta base.",
     )
 
 
-def _render_match_explorer(predictions: pd.DataFrame) -> None:
-    st.subheader("Match Explorer")
-    st.write("Browse match-level forecasts alongside a public contract that only uses real data.")
-    _render_dataframe(
-        predictions,
-        "No match forecasts are published yet. The public app only exposes forecasts that can be "
-        "paired with real observed match truth and coverage metadata.",
+def _render_models_tab(coverage: pd.DataFrame, methodology_status: pd.DataFrame, team_forecast: pd.DataFrame, group_forecast: pd.DataFrame) -> None:
+    st.markdown("## Camada analítica pública")
+    st.caption("A vitrine técnica dos artefatos que alimentam o app.")
+    _coverage_cards(coverage, methodology_status)
+
+    st.markdown("### Contrato metodológico")
+    _render_table(
+        methodology_status,
+        column_map={
+            "metric_name": "Estatística",
+            "has_truth": "Tem verdade",
+            "truth_coverage_pct": "Cobertura",
+            "has_predictions": "Tem forecast",
+            "publish_status": "Status público",
+        },
+        transforms={
+            "metric_name": _model_label,
+            "has_truth": lambda value: "Sim" if bool(value) else "Não",
+            "truth_coverage_pct": lambda value: _format_pct(value, 0),
+            "has_predictions": lambda value: "Sim" if bool(value) else "Não",
+            "publish_status": _publish_status_label,
+        },
+        empty_message="Sem status metodológico para mostrar.",
+    )
+
+    st.markdown("### Fontes e construção do produto")
+    st.caption("O app agora combina camada observada, priors estruturais e histórico recente de jogadores sem esconder a origem dos sinais.")
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "Camada": "Verdade observada",
+                    "Origem principal": "ESPN scoreboard público",
+                    "Uso no app": "Resultados, gols, chutes, faltas e comparação previsão vs. realidade.",
+                },
+                {
+                    "Camada": "Priors de elenco",
+                    "Origem principal": "ESPN roster público + API-Football",
+                    "Uso no app": "Artilharia projetada, disciplina, peso ofensivo e profundidade recente por seleção.",
+                },
+                {
+                    "Camada": "Serving analítico",
+                    "Origem principal": "Pipelines e artefatos locais",
+                    "Uso no app": "Grupos, mata-mata, probabilidade de título e cenários por jogo.",
+                },
+            ]
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### Projeção consolidada por seleção")
+    _render_table(
+        team_forecast,
+        column_map={
+            "team": "Seleção",
+            "matches_played": "Jogos",
+            "forecast_total_points": "Pontos finais",
+            "forecast_total_goals_for": "Gols finais",
+            "forecast_total_cards_for": "Cartões finais",
+            "forecast_total_fouls_for": "Faltas finais",
+        },
+        transforms={
+            "team": _display_team,
+            "matches_played": lambda value: _format_number(value, 0),
+            "forecast_total_points": lambda value: _format_number(value, 1),
+            "forecast_total_goals_for": lambda value: _format_number(value, 1),
+            "forecast_total_cards_for": lambda value: _format_number(value, 1),
+            "forecast_total_fouls_for": lambda value: _format_number(value, 1),
+        },
+        empty_message="Sem resumo por seleção neste snapshot.",
+    )
+
+    st.markdown("### Cenário agregado dos grupos")
+    _render_table(
+        group_forecast,
+        column_map={
+            "group_stage": "Grupo",
+            "team": "Seleção",
+            "matches_played": "Jogos disputados",
+            "matches_remaining": "Jogos restantes",
+            "projected_total_points": "Pontos finais",
+            "projected_total_goal_difference": "Saldo final",
+        },
+        transforms={
+            "group_stage": _stage_label,
+            "team": _display_team,
+            "matches_played": lambda value: _format_number(value, 0),
+            "matches_remaining": lambda value: _format_number(value, 0),
+            "projected_total_points": lambda value: _format_number(value, 1),
+            "projected_total_goal_difference": lambda value: _format_number(value, 1),
+        },
+        empty_message="Sem agregados de grupo disponíveis.",
     )
 
 
-def _render_coverage_summary(coverage: pd.DataFrame) -> None:
-    st.subheader("Coverage Summary")
-    st.write(
-        "Review which targets currently have real observed match truth and how much public "
-        "coverage is available for each one."
+def _render_title_tab(title_probability: pd.DataFrame) -> None:
+    st.markdown("## Porcentagem provável de ser campeão")
+    st.caption("Sinal público de título combinando força prévia da seleção, caminho projetado e produção esperada no torneio.")
+    _render_rank_cards(
+        title_probability,
+        title_column=lambda row: _display_team(row.get("team")),
+        subtitle_builder=lambda row: f"força { _format_number(row.get('strength_rating'), 1) } | gols projetados { _format_number(row.get('projected_total_goals_for'), 1) }",
+        value_builder=lambda row: _format_pct(row.get("title_probability_pct"), 1),
+        limit=10,
+        empty_message="Sem probabilidade pública de título nesta execução.",
     )
-    _render_dataframe(
-        coverage,
-        "Coverage Summary is not available yet. Run the serving pipeline with real observed "
-        "match truth to publish target-level coverage.",
+    st.markdown("### Distribuição completa")
+    _render_table(
+        title_probability,
+        column_map={
+            "team": "Seleção",
+            "strength_rating": "Força",
+            "projected_total_points": "Pontos projetados",
+            "projected_total_goals_for": "Gols projetados",
+            "title_probability_pct": "Prob. título",
+            "final_probability_pct": "Prob. final",
+            "semifinal_probability_pct": "Prob. semifinal",
+        },
+        transforms={
+            "team": _display_team,
+            "strength_rating": lambda value: _format_number(value, 1),
+            "projected_total_points": lambda value: _format_number(value, 1),
+            "projected_total_goals_for": lambda value: _format_number(value, 1),
+            "title_probability_pct": lambda value: _format_pct(value, 1),
+            "final_probability_pct": lambda value: _format_pct(value, 1),
+            "semifinal_probability_pct": lambda value: _format_pct(value, 1),
+        },
+        empty_message="Sem tabela pública de título.",
     )
 
 
-def _render_teams(teams: pd.DataFrame) -> None:
-    st.subheader("Teams")
-    st.write("Review team-level summary outputs generated from the real-data-only serving layer.")
-    _render_dataframe(
-        teams,
-        "No team summary is published yet because the real observed match truth layer has not "
-        "produced a public team view.",
+def _render_top_scorers_tab(top_scorers: pd.DataFrame) -> None:
+    st.markdown("## Ranking projetado de gols")
+    st.caption("Quem o laboratório projeta para terminar a Copa com mais gols, combinando produção atual, histórico recente de jogadores e o volume restante esperado da sua seleção.")
+    _render_rank_cards(
+        top_scorers,
+        title_column=lambda row: row.get("player_name", "-"),
+        subtitle_builder=lambda row: f"{_display_team(row.get('team'))} | {row.get('position', '-')}",
+        value_builder=lambda row: _format_number(row.get("projected_total_goals"), 1),
+        limit=10,
+        empty_message="Sem ranking de artilharia nesta execução.",
+    )
+    st.markdown("### Explorer de artilharia")
+    _render_table(
+        top_scorers,
+        column_map={
+            "player_name": "Jogador",
+            "team": "Seleção",
+            "position": "Posição",
+            "current_goals": "Gols atuais",
+            "goal_share_pct": "Participação no gol",
+            "projected_additional_goals": "Gols adicionais",
+            "projected_total_goals": "Gols finais",
+        },
+        transforms={
+            "team": _display_team,
+            "current_goals": lambda value: _format_number(value, 1),
+            "goal_share_pct": lambda value: _format_pct(value, 1),
+            "projected_additional_goals": lambda value: _format_number(value, 2),
+            "projected_total_goals": lambda value: _format_number(value, 2),
+        },
+        empty_message="Sem tabela de artilharia pública.",
     )
 
 
-def _render_methodology() -> None:
-    st.subheader("Methodology")
-    st.write(
-        "This app reads precomputed serving outputs instead of fitting models live in the "
-        "UI. That keeps the experience stable while leaving training, evaluation, and batch "
-        "forecast generation in the pipeline layer."
+def _render_methodology_tab() -> None:
+    st.markdown("## Como as previsões são feitas")
+    st.caption("A aba dedicada à metodologia explica a construção do app e do modelo em linguagem de produto e engenharia.")
+    columns = st.columns(4)
+    cards = [
+        (
+            "Fonte observada",
+            "Resultados reais vêm do placar público da ESPN. Gols, chutes e faltas já entram na camada de verdade assim que o jogo encerra.",
+        ),
+        (
+            "Priors de seleção",
+            "Cada time recebe um prior estrutural com força prévia, componentes de ataque e defesa e contexto de profundidade do elenco.",
+        ),
+        (
+            "Priors de jogadores",
+            "O app combina estatística pública de roster com API-Football para enriquecer artilharia projetada, faltas, cartões e o peso ofensivo de cada seleção.",
+        ),
+        (
+            "Forecast híbrido",
+            "O baseline público já não depende só da média do torneio. Ele mistura prior pré-jogo com forma recente e publica a comparação contra o que de fato aconteceu.",
+        ),
+    ]
+    for column, (title, body) in zip(columns, cards):
+        with column:
+            _html(
+                f"""
+                <div class="method-card">
+                  <h4>{escape(title)}</h4>
+                  <p>{escape(body)}</p>
+                </div>
+                """
+            )
+
+    st.markdown(
+        """
+        1. A ingestão lê resultados concluídos e agenda futura da Copa até **19/07/2026**.
+        2. A camada de features monta sinais de forma recente por time e injeta priors de seleção, elenco e histórico recente de jogadores.
+        3. O baseline público atual é o **Híbrido pré-jogo + forma**, usado tanto no backtest quanto nas previsões futuras.
+        4. O app publica três famílias de leitura: **cenário por jogo**, **caminho do torneio** e **camada analítica executiva**.
+        5. A aba de **Precisão até agora** é atualizável jogo a jogo, sempre olhando apenas para partidas encerradas.
+        """
     )
     st.markdown(
         """
-        - The public app is real-data-only: it only surfaces artifacts tied to real observed match truth.
-        - `Coverage Summary` shows what has true observed coverage today versus what is still missing.
-        - `Home` highlights observed matches first so the public status reflects truth coverage, not file presence.
-        - `Model Leaderboard` is intended for model comparison artifacts.
-        - `Match Explorer` is intended for match-level prediction rows.
-        - `Teams` is intended for team summary outputs used in storytelling.
-        - Empty states explain missing real observed match truth rather than implying generic missing CSV errors.
+        **Artefatos públicos deste app**
+
+        - `observed_match_results.csv`
+        - `match_predictions.csv`
+        - `match_prediction_vs_actual.csv`
+        - `group_forecast_summary.csv`
+        - `knockout_forecast_summary.csv`
+        - `team_forecast_summary.csv`
+        - `title_probability_summary.csv`
+        - `top_scorer_forecast.csv`
+        - `methodology_status.csv`
         """
     )
 
 
 def main() -> None:
     _inject_styles()
-    leaderboard, predictions, teams, coverage, observed_results = _load_outputs()
-    home_tab, coverage_tab, leaderboard_tab, match_tab, teams_tab, methodology_tab = st.tabs(
-        ["Home", "Coverage Summary", "Model Leaderboard", "Match Explorer", "Teams", "Methodology"]
+    outputs = _load_outputs()
+
+    overview_tab, predictions_tab, accuracy_tab, groups_tab, knockout_tab, scorers_tab, title_tab, models_tab, methodology_tab = st.tabs(
+        [
+            "Panorama",
+            "Cenários por Jogo",
+            "Precisão até Agora",
+            "Grupos",
+            "Caminho do Mata-mata",
+            "Artilharia Projetada",
+            "Probabilidade de Título",
+            "Camada Analítica",
+            "Metodologia",
+        ]
     )
 
-    with home_tab:
-        _render_home(leaderboard, predictions, teams, coverage, observed_results)
-
-    with coverage_tab:
-        _render_coverage_summary(coverage)
-
-    with leaderboard_tab:
-        _render_model_leaderboard(leaderboard)
-
-    with match_tab:
-        _render_match_explorer(predictions)
-
-    with teams_tab:
-        _render_teams(teams)
-
+    with overview_tab:
+        _render_home(outputs)
+    with predictions_tab:
+        _render_predictions_tab(outputs["predictions"])
+    with accuracy_tab:
+        _render_accuracy_tab(outputs["comparisons"], outputs["leaderboard"])
+    with groups_tab:
+        _render_groups(outputs["observed_results"], outputs["predictions"])
+    with knockout_tab:
+        _render_bracket(outputs["knockout_forecast"])
+    with scorers_tab:
+        _render_top_scorers_tab(outputs["top_scorers"])
+    with title_tab:
+        _render_title_tab(outputs["title_probability"])
+    with models_tab:
+        _render_models_tab(
+            outputs["coverage"],
+            outputs["methodology_status"],
+            outputs["team_forecast"],
+            outputs["group_forecast"],
+        )
     with methodology_tab:
-        _render_methodology()
+        _render_methodology_tab()
 
 
 main()

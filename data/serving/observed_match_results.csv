@@ -1,17 +1,34 @@
-match_id,match_date,stage,home_team,away_team,home_goals,away_goals,home_shots,away_shots,status,source,source_retrieved_at
-760415,2026-06-11,Group A,Mexico,South Africa,2,0,16,3,Full Time,espn,2026-06-16T19:47:37.566018Z
-760414,2026-06-12,Group A,South Korea,Czechia,2,1,15,7,Full Time,espn,2026-06-16T19:47:37.566018Z
-760416,2026-06-12,Group B,Canada,Bosnia-Herzegovina,1,1,13,8,Full Time,espn,2026-06-16T19:47:37.618983Z
-760417,2026-06-13,Group D,United States,Paraguay,4,1,16,9,Full Time,espn,2026-06-16T19:47:37.618983Z
-760419,2026-06-13,Group C,Brazil,Morocco,1,1,12,14,Full Time,espn,2026-06-16T19:47:37.784973Z
-760420,2026-06-13,Group B,Qatar,Switzerland,1,1,6,26,Full Time,espn,2026-06-16T19:47:37.784973Z
-760418,2026-06-14,Group C,Haiti,Scotland,0,1,15,9,Full Time,espn,2026-06-16T19:47:37.784973Z
-760421,2026-06-14,Group D,Australia,Türkiye,2,0,9,30,Full Time,espn,2026-06-16T19:47:37.840224Z
-760422,2026-06-14,Group E,Germany,Curaçao,7,1,26,8,Full Time,espn,2026-06-16T19:47:37.840224Z
-760423,2026-06-14,Group E,Ivory Coast,Ecuador,1,0,15,12,Full Time,espn,2026-06-16T19:47:37.840224Z
-760425,2026-06-14,Group F,Netherlands,Japan,2,2,10,10,Full Time,espn,2026-06-16T19:47:37.840224Z
-760424,2026-06-15,Group F,Sweden,Tunisia,5,1,13,6,Full Time,espn,2026-06-16T19:47:37.840224Z
-760426,2026-06-15,Group G,Belgium,Egypt,1,1,15,14,Full Time,espn,2026-06-16T19:47:37.886494Z
-760428,2026-06-15,Group H,Spain,Cape Verde,0,0,27,6,Full Time,espn,2026-06-16T19:47:37.886494Z
-760429,2026-06-15,Group H,Saudi Arabia,Uruguay,1,1,7,27,Full Time,espn,2026-06-16T19:47:37.886494Z
-760427,2026-06-16,Group G,Iran,New Zealand,2,2,17,14,Full Time,espn,2026-06-16T19:47:37.886494Z
+match_id,match_date,stage,home_team,away_team,home_goals,away_goals,home_shots,away_shots,home_cards,away_cards,home_fouls,away_fouls,status,source,source_retrieved_at,is_future_fixture,home_lineup_confirmed,away_lineup_confirmed,home_probable_lineup_count,away_probable_lineup_count,home_substitutions_used,away_substitutions_used
+760415,2026-06-11,Group A,Mexico,South Africa,2,0,16,3,,,12,11,Full Time,espn,2026-06-20T20:56:51.593551Z,False,False,False,0,0,0,0
+760414,2026-06-12,Group A,South Korea,Czechia,2,1,15,7,,,9,16,Full Time,espn,2026-06-20T20:56:51.593551Z,False,False,False,0,0,0,0
+760416,2026-06-12,Group B,Canada,Bosnia-Herzegovina,1,1,13,8,,,10,20,Full Time,espn,2026-06-20T20:56:51.650966Z,False,False,False,0,0,0,0
+760417,2026-06-13,Group D,United States,Paraguay,4,1,16,9,,,13,17,Full Time,espn,2026-06-20T20:56:51.650966Z,False,False,False,0,0,0,0
+760419,2026-06-13,Group C,Brazil,Morocco,1,1,12,14,,,16,14,Full Time,espn,2026-06-20T20:56:51.704792Z,False,False,False,0,0,0,0
+760420,2026-06-13,Group B,Qatar,Switzerland,1,1,6,26,,,12,11,Full Time,espn,2026-06-20T20:56:51.704792Z,False,False,False,0,0,0,0
+760418,2026-06-14,Group C,Haiti,Scotland,0,1,15,9,,,23,21,Full Time,espn,2026-06-20T20:56:51.704792Z,False,False,False,0,0,0,0
+760421,2026-06-14,Group D,Australia,Türkiye,2,0,9,30,,,12,4,Full Time,espn,2026-06-20T20:56:51.749943Z,False,False,False,0,0,0,0
+760422,2026-06-14,Group E,Germany,Curaçao,7,1,26,8,,,18,11,Full Time,espn,2026-06-20T20:56:51.749943Z,False,False,False,0,0,0,0
+760423,2026-06-14,Group E,Ivory Coast,Ecuador,1,0,15,12,,,10,13,Full Time,espn,2026-06-20T20:56:51.749943Z,False,False,False,0,0,0,0
+760425,2026-06-14,Group F,Netherlands,Japan,2,2,10,10,,,7,7,Full Time,espn,2026-06-20T20:56:51.749943Z,False,False,False,0,0,0,0
+760424,2026-06-15,Group F,Sweden,Tunisia,5,1,13,6,,,10,8,Full Time,espn,2026-06-20T20:56:51.749943Z,False,False,False,0,0,0,0
+760426,2026-06-15,Group G,Belgium,Egypt,1,1,15,14,,,15,15,Full Time,espn,2026-06-20T20:56:52.265698Z,False,False,False,0,0,0,0
+760428,2026-06-15,Group H,Spain,Cape Verde,0,0,27,6,,,10,1,Full Time,espn,2026-06-20T20:56:52.265698Z,False,False,False,0,0,0,0
+760429,2026-06-15,Group H,Saudi Arabia,Uruguay,1,1,7,27,,,11,6,Full Time,espn,2026-06-20T20:56:52.265698Z,False,False,False,0,0,0,0
+760427,2026-06-16,Group G,Iran,New Zealand,2,2,17,14,,,10,8,Full Time,espn,2026-06-20T20:56:52.265698Z,False,False,False,0,0,0,0
+760430,2026-06-16,Group I,Iraq,Norway,1,4,11,12,,,12,13,Full Time,espn,2026-06-20T20:56:52.351384Z,False,False,False,0,0,0,0
+760432,2026-06-16,Group I,France,Senegal,3,1,11,6,,,5,9,Full Time,espn,2026-06-20T20:56:52.351384Z,False,False,False,0,0,0,0
+760431,2026-06-17,Group J,Austria,Jordan,3,1,11,11,,,12,7,Full Time,espn,2026-06-20T20:56:52.432444Z,False,False,False,0,0,0,0
+760433,2026-06-17,Group J,Argentina,Algeria,3,0,10,7,,,13,8,Full Time,espn,2026-06-20T20:56:52.351384Z,False,False,False,0,0,0,0
+760434,2026-06-17,Group L,Ghana,Panama,1,0,7,11,,,9,11,Full Time,espn,2026-06-20T20:56:52.432444Z,False,False,False,0,0,0,0
+760435,2026-06-17,Group K,Portugal,Congo DR,1,1,7,8,,,9,10,Full Time,espn,2026-06-20T20:56:52.432444Z,False,False,False,0,0,0,0
+760437,2026-06-17,Group L,England,Croatia,4,2,22,10,,,10,12,Full Time,espn,2026-06-20T20:56:52.432444Z,False,False,False,0,0,0,0
+760436,2026-06-18,Group K,Uzbekistan,Colombia,1,3,8,15,,,14,11,Full Time,espn,2026-06-20T20:56:52.432444Z,False,False,False,0,0,0,0
+760438,2026-06-18,Group A,Czechia,South Africa,1,1,14,17,,,12,10,Full Time,espn,2026-06-20T20:56:52.603206Z,False,False,False,0,0,0,0
+760439,2026-06-18,Group B,Switzerland,Bosnia-Herzegovina,4,1,13,5,,,7,18,Full Time,espn,2026-06-20T20:56:52.603206Z,False,False,False,0,0,0,0
+760440,2026-06-18,Group B,Canada,Qatar,6,0,32,2,,,9,10,Full Time,espn,2026-06-20T20:56:52.603206Z,False,False,False,0,0,0,0
+760441,2026-06-19,Group A,Mexico,South Korea,1,0,8,9,,,9,7,Full Time,espn,2026-06-20T20:56:52.603206Z,False,False,False,0,0,0,0
+760442,2026-06-19,Group D,United States,Australia,2,0,10,5,,,12,16,Full Time,espn,2026-06-20T20:56:52.765615Z,False,False,False,0,0,0,0
+760445,2026-06-19,Group C,Scotland,Morocco,0,1,6,12,,,11,8,Full Time,espn,2026-06-20T20:56:52.765615Z,False,False,False,0,0,0,0
+760443,2026-06-20,Group D,Türkiye,Paraguay,0,1,32,7,,,14,15,Full Time,espn,2026-06-20T20:56:52.765615Z,False,False,False,0,0,0,0
+760444,2026-06-20,Group C,Brazil,Haiti,3,0,8,7,,,13,14,Full Time,espn,2026-06-20T20:56:52.765615Z,False,False,False,0,0,0,0
+760447,2026-06-20,Group F,Netherlands,Sweden,5,1,10,16,,,9,12,Full Time,espn,2026-06-20T20:56:52.828162Z,False,False,False,0,0,0,0
