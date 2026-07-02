@@ -144,7 +144,7 @@ def _inject_styles() -> None:
             --surface: #0e1714; /* Dark slate emerald surface */
             --line: rgba(24, 113, 94, 0.22); /* Neon teal border */
             --ink: #ffffff; /* White text */
-            --muted: #8ca39a; /* Muted slate-green */
+            --muted: #b0c7bd; /* Brighter, high-contrast muted slate-green */
             --teal-950: #04100d;
             --teal-900: #061c17;
             --teal-700: #00f5d4; /* Vibrant neon cyan/teal */
@@ -720,6 +720,26 @@ def _inject_styles() -> None:
             .meta-grid-stats, .group-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+        }
+
+        /* High contrast overrides for native Streamlit widgets and text */
+        .stApp [data-testid="stMarkdown"] {
+            color: var(--ink) !important;
+        }
+        .stApp [data-testid="stMarkdown"] p, .stApp [data-testid="stMarkdown"] li, .stApp [data-testid="stMarkdown"] span {
+            color: #e0e8e5 !important;
+        }
+        div[data-testid="stMetricLabel"] > div {
+            color: var(--muted) !important;
+        }
+        div[data-testid="stMetricValue"] > div {
+            color: var(--ink) !important;
+        }
+        .stApp p, .stApp li {
+            color: #e0e8e5 !important;
+        }
+        .stSelectbox label, .stSlider label, .stMultiSelect label, .stTextInput label {
+            color: var(--ink) !important;
         }
         </style>
         """,
