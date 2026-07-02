@@ -36,25 +36,31 @@ st.set_page_config(page_title="Laboratório de Forecast da Copa", layout="wide")
 
 SERVING_DIR = ROOT / "data" / "serving"
 ROUND_ORDER = [
+    "Round of 32",
     "Round Of 32",
+    "Round of 16",
     "Round Of 16",
     "Quarterfinal",
     "Quarterfinals",
     "Semifinal",
     "Semifinals",
-    "Third Place",
+    "3rd-Place Match",
     "3Rd Place Match",
+    "Third Place",
     "Final",
 ]
 ROUND_LABELS = {
+    "Round of 32": "16 avos",
     "Round Of 32": "16 avos",
+    "Round of 16": "Oitavas",
     "Round Of 16": "Oitavas",
     "Quarterfinal": "Quartas",
     "Quarterfinals": "Quartas",
     "Semifinal": "Semifinal",
     "Semifinals": "Semifinal",
-    "Third Place": "3º lugar",
+    "3rd-Place Match": "3º lugar",
     "3Rd Place Match": "3º lugar",
+    "Third Place": "3º lugar",
     "Final": "Final",
 }
 MODEL_LABELS = {
@@ -1117,7 +1123,15 @@ def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
     for round_name, frame in ordered.groupby("stage", sort=False):
         rounds[str(round_name)] = frame.reset_index(drop=True)
 
-    round_names = [round_name for round_name in ROUND_ORDER if round_name in rounds][:5]
+    round_names = []
+    seen_labels = set()
+    for round_name in ROUND_ORDER:
+        if round_name in rounds:
+            label = _stage_label(round_name)
+            if label not in seen_labels:
+                seen_labels.add(label)
+                round_names.append(round_name)
+    round_names = round_names[:5]
     
     columns_html = []
     for round_name in round_names:
