@@ -1151,7 +1151,6 @@ def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
             if label not in seen_labels:
                 seen_labels.add(label)
                 round_names.append(round_name)
-    round_names = round_names[:5]
     
     columns_html = []
     for round_name in round_names:
@@ -1205,7 +1204,7 @@ def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
     _html(
         f"""
         <div class="bracket-shell">
-          <div class="bracket-grid">
+          <div class="bracket-grid" style="grid-template-columns: repeat({len(round_names)}, minmax(240px, 1fr)); min-width: {len(round_names) * 260}px;">
             {''.join(columns_html)}
           </div>
         </div>
