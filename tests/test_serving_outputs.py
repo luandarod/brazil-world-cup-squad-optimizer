@@ -19,6 +19,7 @@ from src.serving.load_outputs import (
     read_team_summary,
     read_title_probability_summary,
     read_top_scorer_forecast,
+    read_squad_optimizer_results,
     write_serving_outputs,
 )
 def _make_temp_dir() -> Path:
@@ -135,7 +136,8 @@ def test_write_serving_outputs_writes_new_artifacts_when_provided() -> None:
     methodology = pd.DataFrame([{"metric_name": "goals", "publish_status": "published"}])
     title_probability = pd.DataFrame([{"team": "Brazil", "title_probability_pct": 12.4}])
     top_scorers = pd.DataFrame([{"player_name": "A", "projected_total_goals": 4.2}])
-
+    squad_optimizer = pd.DataFrame([{"player_name": "Alisson", "score_final": 95.0}])
+ 
     write_serving_outputs(
         serving_dir,
         leaderboard,
@@ -150,8 +152,9 @@ def test_write_serving_outputs_writes_new_artifacts_when_provided() -> None:
         methodology,
         title_probability,
         top_scorers,
+        squad_optimizer,
     )
-
+ 
     assert (serving_dir / "coverage_summary.csv").exists()
     assert (serving_dir / "observed_match_results.csv").exists()
     assert (serving_dir / "match_prediction_vs_actual.csv").exists()
@@ -161,6 +164,7 @@ def test_write_serving_outputs_writes_new_artifacts_when_provided() -> None:
     assert (serving_dir / "methodology_status.csv").exists()
     assert (serving_dir / "title_probability_summary.csv").exists()
     assert (serving_dir / "top_scorer_forecast.csv").exists()
+    assert (serving_dir / "squad_optimizer_results.csv").exists()
     pd.testing.assert_frame_equal(read_coverage_summary(serving_dir), coverage)
     pd.testing.assert_frame_equal(read_observed_match_results(serving_dir), observed_results)
     pd.testing.assert_frame_equal(read_match_prediction_vs_actual(serving_dir), comparisons)
@@ -170,6 +174,7 @@ def test_write_serving_outputs_writes_new_artifacts_when_provided() -> None:
     pd.testing.assert_frame_equal(read_methodology_status(serving_dir), methodology)
     pd.testing.assert_frame_equal(read_title_probability_summary(serving_dir), title_probability)
     pd.testing.assert_frame_equal(read_top_scorer_forecast(serving_dir), top_scorers)
+    pd.testing.assert_frame_equal(read_squad_optimizer_results(serving_dir), squad_optimizer)
 
 
 def test_old_writer_call_clears_stale_optional_artifacts_in_reused_directory() -> None:

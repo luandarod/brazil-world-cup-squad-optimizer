@@ -25,7 +25,18 @@ def normalize_features(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
 
     return df
 
-def calculate_scores(df: pd.DataFrame) -> pd.DataFrame:
+DEFAULT_WEIGHTS = {
+    "minutes": 0.20,
+    "rating": 0.20,
+    "league_weight": 0.15,
+    "goal_contributions_p90": 0.15,
+    "key_passes_p90": 0.10,
+    "tackles_p90": 0.10,
+    "interceptions_p90": 0.05,
+    "duel_win_rate": 0.05,
+}
+
+def calculate_scores(df: pd.DataFrame, weights: dict[str, float] | None = None) -> pd.DataFrame:
     df = normalize_features(df, SCORE_FEATURES)
     df = df.copy()
 
@@ -33,15 +44,28 @@ def calculate_scores(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = 0
 
+    # Resolve and normalize weights
+    w = DEFAULT_WEIGHTS.copy()
+    if weights is not None:
+        for k, v in weights.items():
+            if k in w:
+                w[k] = float(v)
+    
+    total_w = sum(w.values())
+    if total_w > 0:
+        w_norm = {k: v / total_w for k, v in w.items()}
+    else:
+        w_norm = {k: 0.0 for k in w}
+
     df["base_score"] = (
-        0.20 * df["minutes_norm"] +
-        0.20 * df["rating_norm"] +
-        0.15 * df["league_weight_norm"] +
-        0.15 * df["goal_contributions_p90_norm"] +
-        0.10 * df["key_passes_p90_norm"] +
-        0.10 * df["tackles_p90_norm"] +
-        0.05 * df["interceptions_p90_norm"] +
-        0.05 * df["duel_win_rate_norm"]
+        w_norm.get("minutes", 0.20) * df["minutes_norm"] +
+        w_norm.get("rating", 0.20) * df["rating_norm"] +
+        w_norm.get("league_weight", 0.15) * df["league_weight_norm"] +
+        w_norm.get("goal_contributions_p90", 0.15) * df["goal_contributions_p90_norm"] +
+        w_norm.get("key_passes_p90", 0.10) * df["key_passes_p90_norm"] +
+        w_norm.get("tackles_p90", 0.10) * df["tackles_p90_norm"] +
+        w_norm.get("interceptions_p90", 0.05) * df["interceptions_p90_norm"] +
+        w_norm.get("duel_win_rate", 0.05) * df["duel_win_rate_norm"]
     )
 
     df["minutes_bonus"] = np.where(df["minutes"] >= 1800, 0.05, 0)

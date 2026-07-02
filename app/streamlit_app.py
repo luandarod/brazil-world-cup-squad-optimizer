@@ -27,6 +27,11 @@ from src.serving.load_outputs import (
     read_top_scorer_forecast,
 )
 
+from src.data_cleaning import clean_player_stats
+from src.feature_engineering import add_features
+from src.scoring_model import calculate_scores
+from src.squad_optimizer import select_best_xi, select_reserves, assign_squad_role
+
 st.set_page_config(page_title="Laboratório de Forecast da Copa", layout="wide")
 
 SERVING_DIR = ROOT / "data" / "serving"
@@ -506,6 +511,131 @@ def _inject_styles() -> None:
         .table-shell {
             padding: 0.9rem 1rem 1rem 1rem;
             margin-bottom: 1rem;
+        }
+        /* Tactical Pitch Styles */
+        .tactical-pitch {
+            position: relative;
+            width: 100%;
+            max-width: 680px;
+            height: 720px;
+            background: radial-gradient(circle at center, #2e7d32 20%, #1b5e20 100%);
+            border: 4px solid #ffffff;
+            border-radius: 20px;
+            margin: 1.5rem auto;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+        }
+        .pitch-center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 140px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+        }
+        .pitch-center-spot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+        .pitch-center-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.35);
+        }
+        .pitch-penalty-area-top {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 120px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-top: none;
+        }
+        .pitch-penalty-area-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 120px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-bottom: none;
+        }
+        .pitch-goal-area-top {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-top: none;
+        }
+        .pitch-goal-area-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-bottom: none;
+        }
+        .player-node {
+            position: absolute;
+            width: 90px;
+            text-align: center;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .player-node:hover {
+            transform: translate(-50%, -55%) scale(1.1);
+        }
+        .player-node-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd54f, #f57f17);
+            color: #0b2f28;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 5px auto;
+            border: 2px solid #ffffff;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+            font-size: 1rem;
+            font-family: "Barlow Condensed", sans-serif;
+        }
+        .player-node-name {
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.9);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90px;
+        }
+        .player-node-pos {
+            color: #dbf0e8;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
         @media (max-width: 980px) {
             .hero-title {
@@ -1474,11 +1604,219 @@ def _render_methodology_tab() -> None:
     )
 
 
+def _render_squad_tab() -> None:
+    st.markdown("## Otimizador de Escalação (Seleção Brasileira)")
+    st.caption("Filtre ausências de jogadores (lesionados/suspensos) e veja o time titular e reservas recalcular em tempo real.")
+
+    csv_path = ROOT / "data" / "processed" / "sample_brazil_players.csv"
+    if not csv_path.exists():
+        st.error(f"Arquivo de jogadores não encontrado: {csv_path}")
+        return
+
+    df = pd.read_csv(csv_path)
+
+    # Absence management ("deixar ok as faltas")
+    all_players = sorted(df["player_name"].dropna().unique().tolist())
+    
+    absent_players = st.multiselect(
+        "Selecione jogadores indisponíveis (Lesionados/Suspensos):",
+        options=all_players,
+        default=[],
+        help="Os jogadores selecionados serão excluídos da otimização de escalação."
+    )
+
+    # Customizable weights UI
+    with st.expander("⚙️ Personalizar Coeficientes de Peso do Score"):
+        st.caption("Ajuste a importância de cada atributo. Os valores serão normalizados automaticamente para somar 100%.")
+        
+        col_w1, col_w2 = st.columns(2)
+        with col_w1:
+            w_minutes = st.slider("Minutos Jogados", 0, 100, 20, help="Importância da minutagem total acumulada na temporada.")
+            w_rating = st.slider("Nota Média (Rating)", 0, 100, 20, help="Desempenho geral avaliado por partida.")
+            w_league = st.slider("Força da Liga (League Weight)", 0, 100, 15, help="Nível competitivo do campeonato onde atua.")
+            w_goals = st.slider("Gols + Assistências por 90 min", 0, 100, 15, help="Participação direta em gols normalizada por minuto.")
+        with col_w2:
+            w_passes = st.slider("Passes Decisivos por 90 min", 0, 100, 10, help="Criação de chances de gol.")
+            w_tackles = st.slider("Desarmes por 90 min", 0, 100, 10, help="Ações defensivas diretas.")
+            w_interceptions = st.slider("Interceptações por 90 min", 0, 100, 5, help="Leitura de jogo e roubadas de bola passivas.")
+            w_duels = st.slider("Taxa de Vitória em Duelos", 0, 100, 5, help="Eficiência em disputas individuais pelo chão ou ar.")
+
+        custom_weights = {
+            "minutes": w_minutes,
+            "rating": w_rating,
+            "league_weight": w_league,
+            "goal_contributions_p90": w_goals,
+            "key_passes_p90": w_passes,
+            "tackles_p90": w_tackles,
+            "interceptions_p90": w_interceptions,
+            "duel_win_rate": w_duels,
+        }
+
+        # Show actual normalized percentages
+        tot_w = sum(custom_weights.values())
+        if tot_w > 0:
+            pct_w = {k: (v / tot_w) * 100 for k, v in custom_weights.items()}
+            st.info(
+                f"Pesos finais calculados: Minutos: {pct_w['minutes']:.1f}% | Nota: {pct_w['rating']:.1f}% | "
+                f"Liga: {pct_w['league_weight']:.1f}% | G+A: {pct_w['goal_contributions_p90']:.1f}% | "
+                f"Passes: {pct_w['key_passes_p90']:.1f}% | Desarmes: {pct_w['tackles_p90']:.1f}% | "
+                f"Interceptações: {pct_w['interceptions_p90']:.1f}% | Duelos: {pct_w['duel_win_rate']:.1f}%"
+            )
+        else:
+            st.warning("Todos os pesos estão zerados! O score base será 0.")
+
+    # Filter out absent players
+    active_df = df[~df["player_name"].isin(absent_players)].copy()
+
+    if active_df.empty:
+        st.warning("Todos os jogadores foram marcados como indisponíveis!")
+        return
+
+    # Run the pipeline
+    try:
+        df_cleaned = clean_player_stats(active_df)
+        df_featured = add_features(df_cleaned)
+        df_scored = calculate_scores(df_featured, weights=custom_weights)
+        xi = select_best_xi(df_scored)
+        reserves = select_reserves(df_scored, xi)
+        reserves = assign_squad_role(reserves)
+    except Exception as e:
+        st.error(f"Erro ao processar otimização de elenco: {e}")
+        return
+
+    # Layout: left for the pitch, right for the stats and reserves
+    col_left, col_right = st.columns([1.3, 1.0], gap="large")
+
+    with col_left:
+        # Soccer pitch layout
+        st.markdown("### Time Titular Ideal (4-2-3-1)")
+        st.caption("Posições baseadas no maior score individual por função.")
+        
+        # Coordinates mapping
+        positions_coords = {
+            "GK": [(86, 50)],
+            "LB": [(65, 15)],
+            "CB": [(68, 38), (68, 62)],
+            "RB": [(65, 85)],
+            "DM_CM": [(46, 35), (46, 65)],
+            "LW": [(25, 15)],
+            "AM_SS": [(25, 50)],
+            "RW": [(25, 85)],
+            "ST": [(10, 50)],
+        }
+        
+        placed_counts = {}
+        player_nodes_html = []
+        
+        for _, row in xi.iterrows():
+            pos = row["squad_position"]
+            idx = placed_counts.get(pos, 0)
+            placed_counts[pos] = idx + 1
+            
+            if pos in positions_coords and idx < len(positions_coords[pos]):
+                top, left = positions_coords[pos][idx]
+            else:
+                top, left = (50, 50)
+                
+            player_name = row["player_name"]
+            score = row["score_final"]
+            
+            # Format position label in PT
+            pos_label_pt = {
+                "GK": "Goleiro",
+                "LB": "Lat. Esquerdo",
+                "CB": "Zagueiro",
+                "RB": "Lat. Direito",
+                "DM_CM": "Meio-Campo",
+                "LW": "Ponta Esquerda",
+                "AM_SS": "Meia Atacante",
+                "RW": "Ponta Direita",
+                "ST": "Centroavante"
+            }.get(pos, pos)
+            
+            player_nodes_html.append(
+                f"""
+                <div class="player-node" style="top: {top}%; left: {left}%;">
+                  <div class="player-node-badge">{escape(_format_number(score, 0))}</div>
+                  <div class="player-node-name" title="{escape(player_name)}">{escape(player_name)}</div>
+                  <div class="player-node-pos">{escape(pos_label_pt)}</div>
+                </div>
+                """
+            )
+            
+        pitch_html = f"""
+        <div class="tactical-pitch">
+          <div class="pitch-center-line"></div>
+          <div class="pitch-center-circle"></div>
+          <div class="pitch-center-spot"></div>
+          <div class="pitch-penalty-area-top"></div>
+          <div class="pitch-penalty-area-bottom"></div>
+          <div class="pitch-goal-area-top"></div>
+          <div class="pitch-goal-area-bottom"></div>
+          {"".join(player_nodes_html)}
+        </div>
+        """
+        _html(pitch_html)
+
+    with col_right:
+        st.markdown("### Banco de Reservas (12 Jogadores)")
+        st.caption("Melhores jogadores por score que não entraram no XI titular.")
+        
+        # Format reserves table
+        reserves_table_rows = []
+        for idx, row in enumerate(reserves.to_dict("records"), start=12): # starting index 12
+            reserves_table_rows.append(
+                f"""
+                <div class="group-row" style="padding: 0.6rem 0;">
+                  <div class="group-main">
+                    <span class="rank-number" style="background: rgba(24, 113, 94, 0.05); border-color: rgba(24, 113, 94, 0.1); width: 32px; height: 32px; font-size: 0.85rem;">{idx}</span>
+                    <div>
+                      <div class="group-team" style="font-size: 0.95rem;">{escape(row["player_name"])}</div>
+                      <div class="group-note" style="font-size: 0.8rem;">{escape(row["team"])} | {escape(row["league"])}</div>
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--teal-900);">{escape(_format_number(row["score_final"], 1))}</div>
+                    <div style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Score</div>
+                  </div>
+                </div>
+                """
+            )
+            
+        _html(
+            f"""
+            <div class="group-shell card" style="margin-top: 0.5rem; padding: 1rem;">
+              {''.join(reserves_table_rows)}
+            </div>
+            """
+        )
+        
+        # General squad stats
+        st.markdown("### Métricas do Elenco Otimizado")
+        mean_xi_score = xi["score_final"].mean()
+        mean_reserves_score = reserves["score_final"].mean()
+        
+        _metric_strip(
+            [
+                {
+                    "label": "Média XI Titular",
+                    "value": _format_number(mean_xi_score, 1),
+                    "foot": "Média de score dos 11 titulares.",
+                },
+                {
+                    "label": "Média Reservas",
+                    "value": _format_number(mean_reserves_score, 1),
+                    "foot": "Média dos 12 suplentes.",
+                }
+            ]
+        )
+
+
 def main() -> None:
     _inject_styles()
     outputs = _load_outputs()
 
-    overview_tab, predictions_tab, accuracy_tab, groups_tab, knockout_tab, scorers_tab, title_tab, models_tab, methodology_tab = st.tabs(
+    overview_tab, predictions_tab, accuracy_tab, groups_tab, knockout_tab, scorers_tab, title_tab, models_tab, squad_tab, methodology_tab = st.tabs(
         [
             "Panorama",
             "Cenários por Jogo",
@@ -1488,6 +1826,7 @@ def main() -> None:
             "Artilharia Projetada",
             "Probabilidade de Título",
             "Camada Analítica",
+            "Otimizador de Escalação",
             "Metodologia",
         ]
     )
@@ -1513,6 +1852,8 @@ def main() -> None:
             outputs["team_forecast"],
             outputs["group_forecast"],
         )
+    with squad_tab:
+        _render_squad_tab()
     with methodology_tab:
         _render_methodology_tab()
 

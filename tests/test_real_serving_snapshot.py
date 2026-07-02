@@ -6,10 +6,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.pipelines.build_real_serving_snapshot import (
-    _resolve_team_label,
-    build_real_serving_snapshot,
-)
+from src.pipelines.build_real_serving_snapshot import build_real_serving_snapshot
+from src.pipelines.run_simulations import _resolve_team_label
 from src.serving.load_outputs import (
     read_coverage_summary,
     read_group_forecast_summary,
@@ -120,6 +118,7 @@ def test_build_real_serving_snapshot_writes_honest_outputs() -> None:
         "methodology_status",
         "title_probability_summary",
         "top_scorer_forecast",
+        "squad_optimizer_results",
     }
     assert outputs["future_fixtures"]["match_id"].tolist() == ["403", "404"]
 
@@ -328,6 +327,7 @@ def test_build_real_serving_snapshot_returns_observed_and_future_match_inputs_wi
         "methodology_status",
         "title_probability_summary",
         "top_scorer_forecast",
+        "squad_optimizer_results",
     }
     assert outputs["observed_results"].to_dict("records") == [
         {

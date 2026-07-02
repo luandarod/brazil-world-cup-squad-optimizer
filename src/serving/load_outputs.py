@@ -26,6 +26,7 @@ def write_serving_outputs(
     methodology_status: pd.DataFrame | None = None,
     title_probability_summary: pd.DataFrame | None = None,
     top_scorer_forecast: pd.DataFrame | None = None,
+    squad_optimizer_results: pd.DataFrame | None = None,
 ) -> None:
     output_dir = Path(base_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -43,6 +44,7 @@ def write_serving_outputs(
         "methodology_status.csv": methodology_status,
         "title_probability_summary.csv": title_probability_summary,
         "top_scorer_forecast.csv": top_scorer_forecast,
+        "squad_optimizer_results.csv": squad_optimizer_results,
     }
     for filename, frame in optional_frames.items():
         path = output_dir / filename
@@ -104,3 +106,7 @@ def read_title_probability_summary(base_dir: Path) -> pd.DataFrame:
 
 def read_top_scorer_forecast(base_dir: Path) -> pd.DataFrame:
     return _read_csv_or_empty(Path(base_dir) / "top_scorer_forecast.csv")
+
+
+def read_squad_optimizer_results(base_dir: Path) -> pd.DataFrame:
+    return _read_csv_or_empty(Path(base_dir) / "squad_optimizer_results.csv")

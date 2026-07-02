@@ -27,6 +27,7 @@ def test_streamlit_app_exposes_forecast_and_tournament_views() -> None:
     assert "Laboratório de Forecast da Copa" in app_source
     assert "API-Football" in app_source
     assert "Priors de jogadores" in app_source
+    assert "Otimizador de Escalação" in app_source
 
 
 def test_public_docs_describe_expanded_serving_artifacts() -> None:
