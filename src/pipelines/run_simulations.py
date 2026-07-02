@@ -934,7 +934,7 @@ def _build_knockout_forecast_summary(predictions: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=KNOCKOUT_FORECAST_COLUMNS)
 
     knockout = predictions.loc[
-        predictions["is_future_fixture"] & ~predictions["stage"].astype(str).str.startswith("Group ")
+        ~predictions["stage"].astype(str).str.startswith("Group ")
     ].copy()
     if knockout.empty:
         return pd.DataFrame(columns=KNOCKOUT_FORECAST_COLUMNS)

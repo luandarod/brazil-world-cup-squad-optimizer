@@ -1899,7 +1899,7 @@ def _render_squad_tab() -> None:
                     </div>
                   </div>
                   <div style="text-align: right;">
-                    <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--teal-900);">{escape(_format_number(row["score_final"], 1))}</div>
+                    <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--teal-700);">{escape(_format_number(row["score_final"], 1))}</div>
                     <div style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Score</div>
                   </div>
                 </div>
