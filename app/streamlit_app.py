@@ -1118,50 +1118,65 @@ def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
         rounds[str(round_name)] = frame.reset_index(drop=True)
 
     round_names = [round_name for round_name in ROUND_ORDER if round_name in rounds][:5]
-    columns = st.columns(len(round_names), gap="medium")
-    for column, round_name in zip(columns, round_names):
-        with column:
-            cards = []
-            for row in rounds[round_name].to_dict("records"):
-                cards.append(
-                    f"""
-                    <div class="bracket-card">
-                      <div class="bracket-head">
-                        <span class="stage-pill">{escape(_format_date(row.get("match_date")))}</span>
-                        <span>{escape(_display_team(row.get("predicted_winner")))}</span>
-                      </div>
-                      <div class="team-line">
-                        <span class="team-badge">{escape(_team_code(row.get("home_team")))}</span>
-                        <span class="team-name">{escape(_display_team(row.get("home_team")))}</span>
-                        <span class="match-score">{escape(_format_number(row.get("predicted_home_goals"), 1))}</span>
-                      </div>
-                      <div class="team-line">
-                        <span class="team-badge">{escape(_team_code(row.get("away_team")))}</span>
-                        <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
-                        <span class="match-score">{escape(_format_number(row.get("predicted_away_goals"), 1))}</span>
-                      </div>
-                      <div class="meta-grid-stats">
-                        <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_shots"), 1))} x {escape(_format_number(row.get("predicted_away_shots"), 1))}</span></div>
-                        <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_fouls"), 1))} x {escape(_format_number(row.get("predicted_away_fouls"), 1))}</span></div>
-                        <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_cards"), 1))} x {escape(_format_number(row.get("predicted_away_cards"), 1))}</span></div>
-                      </div>
-                      <div class="meta-model-row">
-                        <span>🤖 Modelo: {escape(_model_label(row.get("model_name")))}</span>
-                      </div>
-                    </div>
-                    """
-                )
-            _html(
+    
+    columns_html = []
+    for round_name in round_names:
+        cards = []
+        for row in rounds[round_name].to_dict("records"):
+            home_team = row.get("home_team")
+            away_team = row.get("away_team")
+            predicted_winner = row.get("predicted_winner")
+            
+            cards.append(
                 f"""
-                <div class="table-shell">
-                  <div class="bracket-round-title">{escape(_stage_label(round_name))}</div>
-                  <div class="section-copy">Caminho projetado da chave nesta etapa.</div>
-                  <div class="bracket-stack">
-                    {''.join(cards)}
+                <div class="bracket-card">
+                  <div class="bracket-head">
+                    <span class="stage-pill">{escape(_format_date(row.get("match_date")))}</span>
+                    <span>Vencedor: {escape(_display_team(predicted_winner))}</span>
+                  </div>
+                  <div class="team-line">
+                    <span class="team-badge">{escape(_team_code(home_team))}</span>
+                    <span class="team-name">{escape(_display_team(home_team))}</span>
+                    <span class="match-score">{escape(_format_number(row.get("predicted_home_goals"), 1))}</span>
+                  </div>
+                  <div class="team-line">
+                    <span class="team-badge">{escape(_team_code(away_team))}</span>
+                    <span class="team-name">{escape(_display_team(away_team))}</span>
+                    <span class="match-score">{escape(_format_number(row.get("predicted_away_goals"), 1))}</span>
+                  </div>
+                  <div class="meta-grid-stats">
+                    <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_shots"), 1))} x {escape(_format_number(row.get("predicted_away_shots"), 1))}</span></div>
+                    <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_fouls"), 1))} x {escape(_format_number(row.get("predicted_away_fouls"), 1))}</span></div>
+                    <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_cards"), 1))} x {escape(_format_number(row.get("predicted_away_cards"), 1))}</span></div>
+                  </div>
+                  <div class="meta-model-row">
+                    <span>🤖 Modelo: {escape(_model_label(row.get("model_name")))}</span>
                   </div>
                 </div>
                 """
             )
+        
+        columns_html.append(
+            f"""
+            <div class="table-shell">
+              <div class="bracket-round-title">{escape(_stage_label(round_name))}</div>
+              <div class="section-copy">Caminho projetado da chave nesta etapa.</div>
+              <div class="bracket-stack">
+                {''.join(cards)}
+              </div>
+            </div>
+            """
+        )
+        
+    _html(
+        f"""
+        <div class="bracket-shell">
+          <div class="bracket-grid">
+            {''.join(columns_html)}
+          </div>
+        </div>
+        """
+    )
 
 
 def _render_rank_cards(frame: pd.DataFrame, title_column: str, subtitle_builder: callable, value_builder: callable, limit: int = 10, empty_message: str = "Sem dados para este ranking.") -> None:
