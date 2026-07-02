@@ -86,6 +86,24 @@ def _normalize_event(
     if not match_id or not match_date:
         return None
 
+    home_cards = home_team["cards"]
+    away_cards = away_team["cards"]
+    if is_completed and "details" in competition:
+        home_cards = 0
+        away_cards = 0
+        details = competition.get("details") or []
+        home_id = str(home_team["team_id"]) if home_team["team_id"] is not None else None
+        away_id = str(away_team["team_id"]) if away_team["team_id"] is not None else None
+        for detail in details:
+            if detail.get("yellowCard") or detail.get("redCard"):
+                detail_team = detail.get("team") or {}
+                detail_team_id = str(detail_team.get("id")) if detail_team.get("id") is not None else None
+                if detail_team_id:
+                    if detail_team_id == home_id:
+                        home_cards += 1
+                    elif detail_team_id == away_id:
+                        away_cards += 1
+
     return {
         "match_id": str(match_id),
         "match_date": match_date,
@@ -98,8 +116,8 @@ def _normalize_event(
         "away_goals": away_team["score"],
         "home_shots": home_team["shots"],
         "away_shots": away_team["shots"],
-        "home_cards": home_team["cards"],
-        "away_cards": away_team["cards"],
+        "home_cards": home_cards,
+        "away_cards": away_cards,
         "home_fouls": home_team["fouls"],
         "away_fouls": away_team["fouls"],
         "status": _read_status(event, competition),
