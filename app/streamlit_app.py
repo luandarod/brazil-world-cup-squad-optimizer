@@ -134,25 +134,26 @@ def _inject_styles() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg: #f6f4ee;
-            --surface: #fffdf8;
-            --line: #d7dfd9;
-            --ink: #10251f;
-            --muted: #61756d;
-            --teal-950: #0b2f28;
-            --teal-900: #11483d;
-            --teal-700: #18715e;
-            --teal-100: #dbf0e8;
-            --gold-100: #efe7d0;
-            --shadow: 0 18px 40px rgba(10, 42, 35, 0.08);
+            --bg: #070d0a; /* Ultra-deep emerald-black */
+            --surface: #0e1714; /* Dark slate emerald surface */
+            --line: rgba(24, 113, 94, 0.22); /* Neon teal border */
+            --ink: #ffffff; /* White text */
+            --muted: #8ca39a; /* Muted slate-green */
+            --teal-950: #04100d;
+            --teal-900: #061c17;
+            --teal-700: #00f5d4; /* Vibrant neon cyan/teal */
+            --teal-100: rgba(0, 245, 212, 0.12);
+            --gold-100: rgba(255, 213, 79, 0.12);
+            --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
             --radius-lg: 24px;
             --radius-md: 18px;
-            --radius-sm: 14px;
+            --radius-sm: 12px;
         }
         .stApp {
             background:
-                radial-gradient(circle at top right, rgba(24, 113, 94, 0.10), transparent 24%),
-                linear-gradient(180deg, #fbfaf6 0%, var(--bg) 100%);
+                radial-gradient(circle at top right, rgba(0, 245, 212, 0.08), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(24, 113, 94, 0.08), transparent 30%),
+                var(--bg);
             color: var(--ink);
             font-family: "IBM Plex Sans", sans-serif;
         }
@@ -165,30 +166,33 @@ def _inject_styles() -> None:
             gap: 0.5rem;
             padding: 0.55rem;
             margin-bottom: 1.2rem;
-            border: 1px solid rgba(16, 37, 31, 0.10);
+            border: 1px solid var(--line);
             border-radius: 18px;
-            background: rgba(255, 253, 248, 0.92);
-            box-shadow: 0 12px 28px rgba(10, 42, 35, 0.07);
+            background: rgba(14, 23, 20, 0.95);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
             backdrop-filter: blur(10px);
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            flex-wrap: nowrap !important;
         }
         .stTabs [data-baseweb="tab"] {
             min-height: 44px;
             padding: 0.55rem 0.95rem 0.5rem 0.95rem;
             border-radius: 12px;
-            color: rgba(16, 37, 31, 0.72);
+            color: rgba(255, 255, 255, 0.7);
             font-family: "Barlow Condensed", sans-serif;
             font-size: 1.05rem;
             letter-spacing: 0.01em;
             transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
         }
         .stTabs [data-baseweb="tab"]:hover {
-            background: rgba(24, 113, 94, 0.08);
-            color: var(--ink);
+            background: rgba(0, 245, 212, 0.1);
+            color: var(--teal-700);
         }
         .stTabs [aria-selected="true"] {
-            background: linear-gradient(180deg, rgba(24, 113, 94, 0.16) 0%, rgba(24, 113, 94, 0.10) 100%);
-            color: var(--teal-950);
-            box-shadow: inset 0 -2px 0 var(--teal-700);
+            background: linear-gradient(180deg, rgba(0, 245, 212, 0.16) 0%, rgba(0, 245, 212, 0.08) 100%) !important;
+            color: var(--teal-700) !important;
+            box-shadow: inset 0 -2px 0 var(--teal-700) !important;
         }
         .stTabs [data-baseweb="tab-highlight"] {
             background: var(--teal-700);
@@ -203,30 +207,30 @@ def _inject_styles() -> None:
             position: relative;
             overflow: hidden;
             border-radius: 30px;
-            padding: 2rem;
-            margin-bottom: 1rem;
+            padding: 2.2rem;
+            margin-bottom: 1.5rem;
             background:
-                linear-gradient(135deg, rgba(11, 47, 40, 0.98), rgba(17, 72, 61, 0.96));
-            color: #f5f7f2;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 26px 68px rgba(11, 47, 40, 0.18);
+                linear-gradient(135deg, rgba(6, 28, 23, 0.95), rgba(11, 40, 33, 0.95));
+            color: #ffffff;
+            border: 1px solid rgba(0, 245, 212, 0.15);
+            box-shadow: 0 26px 68px rgba(0, 0, 0, 0.5);
         }
         .hero-shell::after {
             content: "";
             position: absolute;
             inset: 0;
             background:
-                radial-gradient(circle at 14% 18%, rgba(255,255,255,0.09), transparent 18%),
-                linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 48%, transparent 50%),
-                repeating-linear-gradient(180deg, transparent 0 38px, rgba(255,255,255,0.05) 38px 39px);
+                radial-gradient(circle at 14% 18%, rgba(0, 245, 212, 0.06), transparent 25%),
+                linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 48%, transparent 50%),
+                repeating-linear-gradient(180deg, transparent 0 38px, rgba(255,255,255,0.02) 38px 39px);
             pointer-events: none;
-            opacity: 0.55;
+            opacity: 0.8;
         }
         .kicker {
             text-transform: uppercase;
             font-size: 0.92rem;
             letter-spacing: 0.12em;
-            color: rgba(245,247,242,0.82);
+            color: var(--teal-700);
             margin-bottom: 0.55rem;
         }
         .hero-title {
@@ -240,7 +244,7 @@ def _inject_styles() -> None:
             margin-top: 0.9rem;
             font-size: 1.02rem;
             line-height: 1.75;
-            color: rgba(245,247,242,0.9);
+            color: var(--muted);
         }
         .section-title {
             font-size: 2rem;
@@ -257,6 +261,11 @@ def _inject_styles() -> None:
             border: 1px solid var(--line);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover, .match-card:hover, .rank-card:hover, .bracket-card:hover {
+            border-color: rgba(0, 245, 212, 0.4);
+            box-shadow: 0 16px 40px rgba(0, 245, 212, 0.08);
         }
         .metric-card, .chip-card, .method-card, .status-card {
             padding: 1rem 1.05rem;
@@ -283,6 +292,7 @@ def _inject_styles() -> None:
         .chip-title {
             font-size: 1.2rem;
             margin-bottom: 0.18rem;
+            color: var(--ink);
         }
         .chip-copy {
             color: var(--muted);
@@ -290,10 +300,11 @@ def _inject_styles() -> None:
             line-height: 1.45;
         }
         .chip-card.is-soft {
-            background: linear-gradient(180deg, #fffdf8 0%, #f7fbf9 100%);
+            background: linear-gradient(180deg, var(--surface) 0%, rgba(0, 245, 212, 0.04) 100%);
         }
         .chip-card.is-warning {
-            background: linear-gradient(180deg, #fffdf8 0%, #f4efe5 100%);
+            background: linear-gradient(180deg, var(--surface) 0%, rgba(255, 213, 79, 0.04) 100%);
+            border-color: rgba(255, 213, 79, 0.25);
         }
         .match-card, .rank-card, .bracket-card {
             padding: 1rem;
@@ -314,8 +325,9 @@ def _inject_styles() -> None:
             padding: 0.22rem 0.6rem;
             border-radius: 999px;
             background: var(--teal-100);
-            color: var(--teal-900);
+            color: var(--teal-700);
             font-weight: 700;
+            border: 1px solid rgba(0, 245, 212, 0.2);
         }
         .team-line {
             display: grid;
@@ -323,7 +335,7 @@ def _inject_styles() -> None:
             gap: 0.7rem;
             align-items: center;
             padding: 0.42rem 0;
-            border-bottom: 1px solid rgba(16,37,31,0.07);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .team-line:last-child {
             border-bottom: none;
@@ -335,10 +347,11 @@ def _inject_styles() -> None:
             width: 40px;
             height: 40px;
             border-radius: 999px;
-            background: rgba(24, 113, 94, 0.10);
-            color: var(--teal-900);
-            border: 1px solid rgba(24, 113, 94, 0.18);
+            background: rgba(0, 245, 212, 0.08);
+            color: var(--teal-700);
+            border: 1px solid rgba(0, 245, 212, 0.25);
             font-size: 1rem;
+            font-weight: 700;
         }
         .team-name {
             font-size: 1rem;
@@ -349,15 +362,16 @@ def _inject_styles() -> None:
             font-size: 1.55rem;
             color: var(--ink);
         }
-        .meta-grid {
+        .meta-grid-stats {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 0.55rem;
             margin-top: 0.85rem;
         }
         .meta-box {
             border-radius: var(--radius-sm);
-            background: #eef4f0;
+            background: rgba(24, 113, 94, 0.12);
+            border: 1px solid rgba(24, 113, 94, 0.15);
             padding: 0.45rem 0.55rem;
         }
         .meta-key {
@@ -373,6 +387,20 @@ def _inject_styles() -> None:
             margin-top: 0.12rem;
             font-weight: 700;
         }
+        .meta-model-row {
+            margin-top: 0.65rem;
+            background: rgba(0, 245, 212, 0.08);
+            border: 1px solid rgba(0, 245, 212, 0.18);
+            border-radius: var(--radius-sm);
+            padding: 0.45rem 0.55rem;
+            font-size: 0.76rem;
+            color: var(--teal-700);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+        }
         .winner-bar {
             margin-top: 0.9rem;
             display: inline-flex;
@@ -380,9 +408,10 @@ def _inject_styles() -> None:
             padding: 0.3rem 0.7rem;
             border-radius: 999px;
             background: var(--teal-100);
-            color: var(--teal-900);
+            color: var(--teal-700);
             font-size: 0.86rem;
             font-weight: 700;
+            border: 1px solid rgba(0, 245, 212, 0.2);
         }
         .group-shell {
             padding: 1.05rem;
@@ -393,7 +422,7 @@ def _inject_styles() -> None:
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 0.8rem;
             padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(16,37,31,0.07);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .group-row:last-child {
             border-bottom: none;
@@ -405,6 +434,7 @@ def _inject_styles() -> None:
         }
         .group-team {
             font-weight: 700;
+            color: var(--ink);
         }
         .group-note {
             color: var(--muted);
@@ -417,17 +447,20 @@ def _inject_styles() -> None:
             gap: 0.35rem;
         }
         .group-stat {
-            background: #eef4f0;
+            background: rgba(24, 113, 94, 0.12);
+            border: 1px solid rgba(24, 113, 94, 0.15);
             border-radius: 12px;
             padding: 0.34rem 0.38rem;
             text-align: center;
+            color: var(--ink);
         }
         .fixture-card {
-            border: 1px solid rgba(16,37,31,0.08);
+            border: 1px solid var(--line);
             border-radius: 16px;
-            background: linear-gradient(180deg, #fffefb 0%, #f7faf8 100%);
+            background: linear-gradient(180deg, #0e1714 0%, #08100d 100%);
             padding: 0.9rem;
             margin-bottom: 0.7rem;
+            box-shadow: var(--shadow);
         }
         .fixture-teams {
             display: grid;
@@ -462,6 +495,7 @@ def _inject_styles() -> None:
         .bracket-round-title {
             font-size: 1.45rem;
             margin: 0 0 0.65rem 0;
+            color: var(--ink);
         }
         .bracket-stack {
             display: grid;
@@ -502,6 +536,7 @@ def _inject_styles() -> None:
         .method-card h4 {
             margin: 0 0 0.32rem 0;
             font-size: 1.4rem;
+            color: var(--ink);
         }
         .method-card p {
             margin: 0;
@@ -518,12 +553,12 @@ def _inject_styles() -> None:
             width: 100%;
             max-width: 680px;
             height: 720px;
-            background: radial-gradient(circle at center, #2e7d32 20%, #1b5e20 100%);
-            border: 4px solid #ffffff;
-            border-radius: 20px;
+            background: radial-gradient(circle at center, #0a1f1a 10%, #040c0a 100%);
+            border: 3px solid rgba(0, 245, 212, 0.4);
+            border-radius: 24px;
             margin: 1.5rem auto;
             overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            box-shadow: 0 20px 50px rgba(0, 245, 212, 0.15);
         }
         .pitch-center-circle {
             position: absolute;
@@ -532,7 +567,7 @@ def _inject_styles() -> None:
             transform: translate(-50%, -50%);
             width: 140px;
             height: 140px;
-            border: 3px solid rgba(255, 255, 255, 0.35);
+            border: 3px solid rgba(0, 245, 212, 0.25);
             border-radius: 50%;
         }
         .pitch-center-spot {
@@ -542,7 +577,7 @@ def _inject_styles() -> None:
             transform: translate(-50%, -50%);
             width: 10px;
             height: 10px;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(0, 245, 212, 0.4);
             border-radius: 50%;
         }
         .pitch-center-line {
@@ -551,7 +586,7 @@ def _inject_styles() -> None:
             left: 0;
             width: 100%;
             height: 3px;
-            background: rgba(255, 255, 255, 0.35);
+            background: rgba(0, 245, 212, 0.25);
         }
         .pitch-penalty-area-top {
             position: absolute;
@@ -560,7 +595,7 @@ def _inject_styles() -> None:
             transform: translateX(-50%);
             width: 320px;
             height: 120px;
-            border: 3px solid rgba(255, 255, 255, 0.35);
+            border: 3px solid rgba(0, 245, 212, 0.25);
             border-top: none;
         }
         .pitch-penalty-area-bottom {
@@ -570,7 +605,7 @@ def _inject_styles() -> None:
             transform: translateX(-50%);
             width: 320px;
             height: 120px;
-            border: 3px solid rgba(255, 255, 255, 0.35);
+            border: 3px solid rgba(0, 245, 212, 0.25);
             border-bottom: none;
         }
         .pitch-goal-area-top {
@@ -580,7 +615,7 @@ def _inject_styles() -> None:
             transform: translateX(-50%);
             width: 140px;
             height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.35);
+            border: 3px solid rgba(0, 245, 212, 0.25);
             border-top: none;
         }
         .pitch-goal-area-bottom {
@@ -590,7 +625,7 @@ def _inject_styles() -> None:
             transform: translateX(-50%);
             width: 140px;
             height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.35);
+            border: 3px solid rgba(0, 245, 212, 0.25);
             border-bottom: none;
         }
         .player-node {
@@ -607,8 +642,8 @@ def _inject_styles() -> None:
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ffd54f, #f57f17);
-            color: #0b2f28;
+            background: linear-gradient(135deg, #00f5d4, #18715e);
+            color: #ffffff;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -637,11 +672,46 @@ def _inject_styles() -> None:
             letter-spacing: 0.05em;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
+
+        /* Custom styles for Streamlit widgets to match dark mode */
+        div[data-baseweb="select"] > div {
+            background-color: var(--surface) !important;
+            color: var(--ink) !important;
+            border-color: var(--line) !important;
+        }
+        div[role="listbox"] {
+            background-color: var(--surface) !important;
+            color: var(--ink) !important;
+        }
+        .stSlider [data-baseweb="slider"] {
+            background-color: var(--teal-900) !important;
+        }
+        .stSlider [role="slider"] {
+            background-color: var(--teal-700) !important;
+            border-color: #ffffff !important;
+        }
+
+        /* Scrollbars custom styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(24, 113, 94, 0.4);
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--teal-700);
+        }
+
         @media (max-width: 980px) {
             .hero-title {
                 font-size: 2.5rem;
             }
-            .meta-grid, .group-stats {
+            .meta-grid-stats, .group-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
@@ -838,11 +908,13 @@ def _match_card(row: dict, actual_mode: bool) -> str:
             <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
             <span class="match-score">{escape(_format_number(away_goals, 1))}</span>
           </div>
-          <div class="meta-grid">
+          <div class="meta-grid-stats">
             <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(home_shots, 1))} x {escape(_format_number(away_shots, 1))}</span></div>
             <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(home_fouls, 1))} x {escape(_format_number(away_fouls, 1))}</span></div>
             <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(home_cards, 1))} x {escape(_format_number(away_cards, 1))}</span></div>
-            <div class="meta-box"><span class="meta-key">Fonte</span><span class="meta-value">{escape("Real" if actual_mode else _model_label(row.get("model_name", "hybrid-prior")))}</span></div>
+          </div>
+          <div class="meta-model-row">
+            <span>🤖 {escape("Fonte: Real" if actual_mode else "Modelo: " + _model_label(row.get("model_name", "hybrid-prior")))}</span>
           </div>
           <div class="winner-bar">{escape("Resultado final" if actual_mode else "Cenário do modelo")}: {escape(_display_team(winner))}</div>
         </div>
@@ -1068,11 +1140,13 @@ def _render_bracket(knockout_forecast: pd.DataFrame) -> None:
                         <span class="team-name">{escape(_display_team(row.get("away_team")))}</span>
                         <span class="match-score">{escape(_format_number(row.get("predicted_away_goals"), 1))}</span>
                       </div>
-                      <div class="meta-grid">
+                      <div class="meta-grid-stats">
                         <div class="meta-box"><span class="meta-key">Chutes</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_shots"), 1))} x {escape(_format_number(row.get("predicted_away_shots"), 1))}</span></div>
                         <div class="meta-box"><span class="meta-key">Faltas</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_fouls"), 1))} x {escape(_format_number(row.get("predicted_away_fouls"), 1))}</span></div>
                         <div class="meta-box"><span class="meta-key">Cartões</span><span class="meta-value">{escape(_format_number(row.get("predicted_home_cards"), 1))} x {escape(_format_number(row.get("predicted_away_cards"), 1))}</span></div>
-                        <div class="meta-box"><span class="meta-key">Modelo</span><span class="meta-value">{escape(_model_label(row.get("model_name")))}</span></div>
+                      </div>
+                      <div class="meta-model-row">
+                        <span>🤖 Modelo: {escape(_model_label(row.get("model_name")))}</span>
                       </div>
                     </div>
                     """
