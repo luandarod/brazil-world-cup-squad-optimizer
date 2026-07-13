@@ -1,0 +1,28 @@
+{
+  "name": "vericup-markets",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm --filter @vericup/txline build && pnpm --filter @vericup/keeper build && pnpm --filter @vericup/app build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:program": "anchor test",
+    "test:e2e": "pnpm --filter @vericup/app test:e2e"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@solana/web3.js": "1.98.4",
+    "@types/chai": "5.2.3",
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "chai": "5.3.3",
+    "mocha": "11.7.5",
+    "ts-mocha": "11.1.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

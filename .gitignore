@@ -1,10 +1,9 @@
+.worktrees/
 .env
 .env.local
-.venv/
-__pycache__/
-.ipynb_checkpoints/
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*.parquet
-*.pyc
-.DS_Store
+.anchor/
+.next/
+coverage/
+node_modules/
+target/
+test-ledger/

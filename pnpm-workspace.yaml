@@ -1,0 +1,18 @@
+packages:
+  - app
+  - keeper
+  - packages/*
+overrides:
+  diff: 9.0.0
+  esbuild: 0.28.1
+  postcss: 8.5.19
+  serialize-javascript: 7.0.7
+  uuid: 14.0.1
+allowBuilds:
+  bigint-buffer: false
+  bufferutil: false
+  esbuild: true
+  sharp: true
+  utf-8-validate: false
+minimumReleaseAgeExclude:
+  - postcss@8.5.19

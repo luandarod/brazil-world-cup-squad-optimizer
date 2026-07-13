@@ -1,9 +1,0 @@
-source,layer,coverage,player_stats,advanced_metrics,market_data,international_matches,automation_fit,project_use
-Sample CSV,MVP reproducibility,Manual project sample,Basic,Basic only,No,No,High for demo,Keep dashboard reproducible without API keys
-API-Football,Primary football API,Broad leagues teams fixtures players,Good,Medium,Limited,Medium,High,Automated production ingestion for player-season statistics
-SportsDataverse,Open-source sports ecosystem,Multi-sport reproducible packages,Depends on package,Depends on package,Depends on package,Depends on package,Medium,Open-source reproducible layer and package ecosystem
-worldfootballR,Soccer extraction layer,FBref Transfermarkt Understat,Strong,Strong via FBref and Understat,Strong via Transfermarkt,Supported via FBref functions,Medium,Add richer soccer features for player selection
-FBref via worldfootballR,Advanced player stats,Major leagues and competitions,Strong,Strong,No,Some international support,Medium,Add per-90 advanced stats and role-specific features
-Transfermarkt via worldfootballR,Reference enrichment,Player valuations transfers squads,Limited,No,Strong,Medium,Medium,Add market value age roster and transfer context
-Understat via worldfootballR,xG layer,EPL La Liga Bundesliga Serie A Ligue 1 RFPL,Medium,Strong xG xA,No,No,Medium,Add expected goals expected assists and shot quality
-Odds API via oddsapiR,Market expectation,Betting odds,No,No,No,Competition-level,Medium,Compare model probabilities with market-implied title odds
